@@ -14,8 +14,8 @@ login_data = {
     "extras[lang]": "es",
     "extras[_sess]": "dc57oo5eb9fd48pshd67cen9r1",
     "extras[recordar]": "1",
-    "username": "nicolas.inostroza.n",
-    "password": "Salsadeperro12",
+    "username": "usuario",
+    "password": "contaseña",
     "recordar": "1"
 }
 mensajes_inutiles = ["UP","Up","up",".","+1","+ 1","-1","x2","X2",",",":c",":(",":C",":)","Sin mensaje"]
@@ -30,7 +30,8 @@ if response.status_code == 200:
     print("Login exitoso!")
     
     forum_url = 'https://www.u-cursos.cl/ingenieria/2/foro_institucion/'
-    numero_pagina = 0
+    # El limite de los numeros de pagina es 412 seguidas en el csv ya estan las primeras 412 paginas para empezar desde despues hay que cambiar el numero de pagina inicial.
+    numero_pagina = 0 #
     while numero_pagina < 412:
         forum_url = f"{forum_url}?id_tema=&offset={numero_pagina}"
         print(f"Obteniendo offset = {numero_pagina} …") 
