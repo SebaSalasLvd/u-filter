@@ -3,7 +3,7 @@ import requests
 import json
 
 # URL de la API que está corriendo localmente
-API_URL = "http://127.0.0.1:5000/classify"
+API_URL = "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend"
 
 # --- Define aquí todas las pruebas que quieras hacer ---
 # Puedes añadir más diccionarios a esta lista para probar más casos.
