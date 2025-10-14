@@ -1,42 +1,139 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* popup container */
+.popup-root {
+  min-width: 550px;
+  max-height: 600px;
+  overflow: auto;
+  padding: 12px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #bf5677;
+  background: linear-gradient(0deg,rgba(191, 86, 119, 1) 0%, rgba(171, 38, 58, 1) 100%);
+  color: #ffffff;
+  box-sizing: border-box;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #54bc4ae0);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* header */
+.popup-title {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* post card */
+.post {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #363636;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* header row: left (title/user) and right (label + toggle) */
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.card {
-  padding: 2em;
+/* left column */
+.post-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0; /* allow ellipsis on title */
 }
 
-.read-the-docs {
-  color: #888;
+.post-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+/* smaller, less prominent user name */
+.post-user {
+  font-size: 12px;
+  color: #cecccc;
+}
+
+/* right column */
+.post-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* label / badge */
+.post-label {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: white;
+  font-weight: 600;
+  border-radius: 999px;
+  line-height: 1;
+  text-transform: none;
+}
+
+/* toggle button */
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 180ms ease;
+  border-radius: 6px;
+}
+.toggle-btn:focus {
+  outline: 2px solid #ff2e6d;
+  outline-offset: 2px;
+}
+
+/* svg icon rotates when open */
+.toggle-btn .toggle-icon {
+  fill: #ffffff;
+  transition: transform 180ms ease;
+  transform-origin: center;
+}
+.toggle-btn.open .toggle-icon {
+  transform: rotate(0deg); /* right-facing */
+}
+/* closed state: icon points down */
+.toggle-btn .toggle-icon {
+  transform: rotate(90deg);
+}
+
+/* collapsible text wrapper: animate height smoothly */
+/* technique: max-height with transition */
+.post-text-wrapper {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 220ms ease, padding 180ms ease;
+  padding-top: 0;
+}
+
+/* when open, allow generous max-height */
+.post-text-wrapper.open {
+  max-height: 400px; /* adjust as needed */
+  padding-top: 8px;
+}
+
+/* the actual text area */
+.post-text {
+  font-size: 13px;
+  color: #e2e2e2;
+  line-height: 1.4;
+  white-space: pre-wrap; /* preserve newlines */
+}
+
+/* small responsive tweaks */
+@media (max-width: 400px) {
+  .popup-root { width: 320px; }
+}
+
