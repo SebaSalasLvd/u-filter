@@ -1,35 +1,28 @@
-import { useState } from 'react';
-import reactLogo from '@/assets/react.svg';
-import wxtLogo from '/wxt.svg';
-import './App.css';
+import browser from "webextension-polyfill";
+import { useState } from "react";
 
-function App() {
-  const [count, setCount] = useState(0);
+export default function App() {
+    const [posts, setPosts] = useState<any[]>([]);
 
-  return (
-    <>
-      <div>
-        <a href="https://wxt.dev" target="_blank">
-          <img src={wxtLogo} className="logo" alt="WXT logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>WXT + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the WXT and React logos to learn more
-      </p>
-    </>
-  );
+    async function fetchPosts() {
+        const response = await browser.runtime.sendMessage({ action: "fetchPosts" });
+        setPosts(Array.isArray(response) ? response : []);
+    }
+
+    return (
+        <div>
+            <button onClick={fetchPosts}>Load Posts</button>
+            <ul>
+                {posts.map((p) => (
+                    <li key={p.id}>
+                        <b>{p.title}</b>: <br></br>
+                        <i>{p.label}, score {p.score}: </i> <br></br>
+                        (<i>User: {p.user}</i>)
+                        <p><span>{p.text}</span></p>
+                        
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }
-
-export default App;
