@@ -5,4 +5,6 @@ export type Post = {
   label?: string;
   labelColor?: string;
   text?: string;
+  date?: string;
+  link?: string;
 };

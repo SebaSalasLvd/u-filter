@@ -1,5 +1,5 @@
-import { Post } from "@/types/post";
 import React from "react";
+import { Post } from "@/types/post";
 
 export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   const [open, setOpen] = useState(false);
@@ -7,10 +7,12 @@ export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   return (
     <article className="post">
       <div className="post-header">
-        <div className="post-left">
-          <div className="post-title">{post.title}</div>
-          <div className="post-user">por {post.user ?? "unknown"}</div>
-        </div>
+        <a href={post?.link} target="_blank" rel="noopener noreferrer">
+          <div className="post-left">
+            <div className="post-title">{post.title}</div>
+            <div className="post-user">por {post.user ?? "unknown"}</div>
+          </div>
+        </a>
 
         <div className="post-right">
           {post.label && (
