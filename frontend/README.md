@@ -1,3 +1,16 @@
-# WXT + React
+### Scripts disponibles para el frontend
 
-This template should help get you started developing with React in WXT.
+Aquí tienes una lista de los scripts disponibles para gestionar el frontend con WXT:
+
+```json
+"scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "compile": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+}
+```
