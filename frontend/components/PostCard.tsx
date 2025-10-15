@@ -1,13 +1,5 @@
+import { Post } from "@/types/post";
 import React from "react";
-
-export type Post = {
-  id: string | number;
-  title: string;
-  user?: string;
-  label?: string;
-  labelColor?: string;
-  text?: string;
-};
 
 export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   const [open, setOpen] = useState(false);
