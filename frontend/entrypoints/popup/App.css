@@ -3,7 +3,7 @@
   min-width: 550px;
   max-height: 600px;
   overflow: auto;
-  padding: 12px;
+  padding: 8px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   background: #bf5677;
   background: linear-gradient(0deg,rgba(191, 86, 119, 1) 0%, rgba(171, 38, 58, 1) 100%);
@@ -137,3 +137,22 @@
   .popup-root { width: 320px; }
 }
 
+/* Navbar styles */
+.navbar {
+  width: 600px;
+  padding: 10px 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+
+.navbar-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-logo {
+  height: 100px;
+  width: auto;
+}
