@@ -147,8 +147,7 @@
 /* Navbar styles */
 .navbar {
   width: 600px;
-  padding: 10px 10px;
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 10px;
   border-radius: 8px;
 }
@@ -160,6 +159,24 @@
 }
 
 .navbar-logo {
-  height: 100px;
+  height: 85px;
   width: auto;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.select-year, .select-label {
+  font-family: system-ui;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #000;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
 }
