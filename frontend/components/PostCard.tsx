@@ -10,7 +10,10 @@ export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
         <a href={post?.link} target="_blank" rel="noopener noreferrer">
           <div className="post-left">
             <div className="post-title">{post.title}</div>
-            <div className="post-user">por {post.user ?? "unknown"}</div>
+            <div className="post-meta">
+              <div className="post-user">por {post.user ?? "unknown"}</div>
+              <div className="post-date">{post.date ?? ''}</div>
+            </div>
           </div>
         </a>
 
