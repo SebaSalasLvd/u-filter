@@ -9,7 +9,8 @@ export default defineContentScript({
       if (current >= posts.length) return;
 
       const post = posts[current];
-      console.log(`Sending post ${current + 1}/${posts.length}...`);
+      console.log(post);
+    //   console.log(`Sending post ${current + 1}/${posts.length}...`);
 
       try {
         await browser.runtime.sendMessage({
@@ -35,7 +36,7 @@ function getAllPosts() {
       text: el.querySelector(".ta")?.textContent || "",
       user: el.querySelector(".usuario")?.textContent || "",
       title: el.querySelector("#mensaje-titulo")?.textContent || "",
-      date: el.querySelector(".tiempo_rel")?.textContent || "",
+      date: (el.querySelector(".tiempo_rel")?.textContent || "").match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)?.[0] ?? ' ',
       link: el.querySelector(".permalink")?.getAttribute("href") || "",
       label: "-",
       score: "-",
