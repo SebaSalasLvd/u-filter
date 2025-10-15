@@ -14,12 +14,10 @@ browser.runtime.onMessage.addListener(
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: post.text }),
+            body: JSON.stringify({ text: post.text + post.title }),
           }
         );
-
         const data = await response.json();
-        console.log("Post classified: →", data.label);
         post.label = data.label;
         post.score = data.score.toFixed(2);
 
