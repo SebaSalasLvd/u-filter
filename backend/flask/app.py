@@ -47,7 +47,6 @@ def classify_text():
                     candidate_labels.remove("Clases Particulares")
                 case "compro":
                     candidate_labels.remove("Arriendo")
-                    candidate_labels.remove("Oferta laboral/practica")
                     candidate_labels.remove("Clases Particulares")
             break
     hypothesis_template_es = "Este texto representa una publicacion que esta intentando ofrecer o promocionar una(s) {}"
