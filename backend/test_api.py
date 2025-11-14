@@ -3,6 +3,7 @@ import requests
 import json
 
 # URL de la API que está corriendo localmente
+# http://127.0.0.1:5000/proyecto/u-filter/backend
 API_URL = "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend"
 
 # --- Define aquí todas las pruebas que quieras hacer ---
@@ -19,8 +20,13 @@ casos_de_prueba = [
     },
     {
         # Caso de prueba con texto ambiguo
-        "text": "VENDO MlEL $5000\n Vendo miel pura multifloral de cordillera de la zona de Curicó a $5000 el envase de 1 kg +56954519417",
+        "text": "VENDO MIEL $5000\n Vendo miel pura multifloral de cordillera de la zona de Curicó a $5000 el envase de 1 kg +56954519417",
+    },
+    {
+        # Caso de prueba con texto ambiguo
+        "text": "TechnologiesInc esta ofriendo trabajos de titulo/trabajo. \n Se buscan ingenieros con interes en la ciencia de datos y la creacion y entrenamiento de modelos de machine learning. \n Cualquier consulta o postulacion mandar un mail a mailgenerico@techinc.com",
     }
+    
 ]
 
 # --- El script enviará una petición por cada caso de prueba ---

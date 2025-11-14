@@ -5,6 +5,8 @@ import torch
 # 1. Inicializar la aplicación Flask
 app = Flask(__name__)
 
+key_words = ["venta","vendo","compro","arriendo","clases","oferta laboral","practica","práctica"]
+
 # 2. Cargar el modelo de clasificación de texto
 # Usamos un pipeline para simplificar. "zero-shot-classification" es ideal
 # porque te permite definir tus propias categorías al momento, sin re-entrenar.
@@ -32,11 +34,22 @@ def classify_text():
 
     # Validar que los datos de entrada son correctos
     if not data or 'text' not in data :
-        return jsonify({"error": "Faltan los campos 'text' o 'categories' en el JSON"}), 400
+        return jsonify({"error": "Falta el campo 'text' en el JSON"}), 400
 
     text_to_classify = data['text']
-    candidate_labels = ["Nada","Arriendo","Oferta laboral/practica","Oferta Clases Particulares","Busqueda Clases Particulares","Venta Entrada","Venta Tecnologia","Venta Comida","Venta Ropa","Venta Libro/Comic","Compra Tecnologia","Compra Comida","Compra Entrada","Compra Ropa","Compra Libro/Comic","Venta juegos de mesa"]
-    hypothesis_template_es = "Este ejemplo es {}"
+    candidate_labels = ["Otro","Arriendo","Oferta laboral/practica","Clases Particulares","Venta","Compra"]
+    for word in key_words:
+        if word.lower() in text_to_classify.lower():
+            candidate_labels.remove("Otro")
+            match word.lower():
+                case "venta" | "vendo":
+                    candidate_labels.remove("Arriendo")
+                    candidate_labels.remove("Clases Particulares")
+                case "compro":
+                    candidate_labels.remove("Arriendo")
+                    candidate_labels.remove("Clases Particulares")
+            break
+    hypothesis_template_es = "Este texto representa una publicacion que esta intentando ofrecer o promocionar una(s) {}"
     # Realizar la clasificación
     try:
         result = classifier(text_to_classify, candidate_labels,hypothesis_template=hypothesis_template_es)
