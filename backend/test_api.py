@@ -41,9 +41,9 @@ for i, prueba in enumerate(casos_de_prueba):
         # Verificamos si la petición fue exitosa (código 200 OK)
         if response.status_code == 200:
             print("✅ Respuesta recibida:")
-            # Usamos json.dumps para imprimir el JSON de forma ordenada (pretty-print)
-            # ensure_ascii=False es clave para que muestre tildes y ñ correctamente
-            print(json.dumps(response.json(), indent=2, ensure_ascii=False))
+
+            # extract an element in the response
+            print(response.json())
         else:
             # Si hay un error del servidor (ej: 400, 500)
             print(f"❌ Error: El servidor respondió con el código {response.status_code}")

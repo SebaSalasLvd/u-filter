@@ -13,8 +13,9 @@ PG_CONFIG = {
     "host": "localhost",  # IP
     "port": "5432"        # Puerto por defecto de Postgres
 }
+API_URL = "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend"
 
-# --- NUEVO (POSTGRES): Función para obtener links existentes de la BD ---
+
 def get_existing_links():
     """
     Se conecta a la base de datos PostgreSQL y obtiene un set de todos los
@@ -35,7 +36,8 @@ def get_existing_links():
             titulo TEXT,
             fecha TEXT,
             contenido TEXT,
-            link TEXT UNIQUE NOT NULL
+            link TEXT UNIQUE NOT NULL,
+            categoria TEXT
         )
         """)
         conn.commit() # Guardar la creación de la tabla
@@ -125,7 +127,7 @@ if response.status_code == 200:
                 texto = texto_tag.get_text(separator="\n", strip=True) if texto_tag else "Sin mensaje"
                 link_tag = contenido.find('a', class_='permalink')
                 link = link_tag['href'] if link_tag and link_tag.has_attr('href') else "Desconocido"
-                
+
                 if link in saved_links:
                     print(f"\nPost encontrado ya existe en la BD (Link: {link}).")
                     print("Deteniendo el scraping para evitar duplicados.")
@@ -135,7 +137,29 @@ if response.status_code == 200:
                 if texto == "Sin mensaje":
                     continue
                 
-                rows.append([autor, titulo, fecha_sql, texto, link])
+                # Calificamos el post enviando el titulo y contenido a la IA par que responda conuna catergoria
+                try:
+                    json_post = {"text": f"{titulo}\n{texto}"}
+                    response = requests.post(API_URL, json=json_post)
+
+                    # Verificamos si la petición fue exitosa (código 200 OK)
+                    if response.status_code == 200:
+                        print("✅ Respuesta recibida:")
+                        categoria = response.json()["label"]
+                    else:
+                        # Si hay un error del servidor (ej: 400, 500)
+                        print(f"Error: El servidor respondió con el código {response.status_code}")
+                        print(f"Mensaje: {response.text}")
+                        seguir = False
+                        break
+
+                except requests.exceptions.ConnectionError as e:
+                    # Si la API no está corriendo
+                    print("❌ Error de conexión: No se pudo conectar a la API.")
+                    seguir = False
+                    break
+                
+                rows.append([autor, titulo, fecha_sql, texto, link, categoria])
             
             if not seguir:
                 break
@@ -154,8 +178,8 @@ if rows:
         cursor = conn.cursor()
         
         sql_insert = """
-        INSERT INTO mensajes (autor, titulo, fecha, contenido, link) 
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO mensajes (autor, titulo, fecha, contenido, link, categoria) 
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (link) DO NOTHING
         """
         
@@ -172,11 +196,6 @@ if rows:
             conn.close()
             print("Conexión a la base de datos Postgres cerrada.")
 
-    # Guardar en CSV (sin cambios, sigue funcionando)
-    print("Guardando en CSV...")
-    with open("./mensajes.csv", "a", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f, delimiter="|")
-        writer.writerows(rows)
 else:
     print("No se recopilaron filas nuevas. La base de datos está actualizada.")
 
