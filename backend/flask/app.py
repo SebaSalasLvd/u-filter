@@ -4,6 +4,7 @@ import torch
 import os
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
+from scrapper.scrapper import run_scrapper
 
 # 1. Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -79,18 +80,18 @@ def classify_text():
         print(f"Error al cargar el modelo: {e}")
         classifier = None
    
+# Llamada al scrapper cuando un usuario entra al foro 
+@app.route('/proyecto/u-filter/backend/scrapper/<string:domain>', methods=['POST'])
+def call_scrapper(domain):
+    run_scrapper(domain)
+
+# 3. Definir el endpoint de la API para clasificación
+@app.route('/proyecto/u-filter/backend', methods=['POST'])
+def classify_text(text_to_classify):
     # Verificar que el modelo se haya cargado
     if not classifier:
         return jsonify({"error": "El modelo no está disponible"}), 500
-
-    # Obtener los datos del cuerpo de la petición (request)
-    data = request.get_json()
-
-    # Validar que los datos de entrada son correctos
-    if not data or 'text' not in data :
-        return jsonify({"error": "Falta el campo 'text' en el JSON"}), 400
-
-    text_to_classify = data['text']
+    
     candidate_labels = ["Otro","Arriendo","Oferta laboral/practica","Clases Particulares","Venta","Compra"]
     for word in key_words:
         if word.lower() in text_to_classify.lower():
@@ -111,10 +112,10 @@ def classify_text():
             "label": result["labels"][0],
             "score": result["scores"][0]
         }
-        return jsonify(top_result)
+        return top_result
 
     except Exception as e:
-        return jsonify({"error": f"Ocurrió un error durante la clasificación: {e}"}), 500
+        return None
 
 @app.route('/proyecto/u-filter/backend/list/<string:domain>', methods=['GET'])
 def list_by_domain(domain: str):
