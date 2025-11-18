@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS classifications (
   post_dom_id TEXT NULL,
   post_external_id TEXT NULL,
   post_url TEXT NULL,
+  post_url_domain TEXT NULL,
   title TEXT NULL,
   input_text TEXT NULL,
   author TEXT NULL,
