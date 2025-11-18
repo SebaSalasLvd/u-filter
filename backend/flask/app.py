@@ -68,7 +68,7 @@ except Exception as e:
 
 # Endpoint legacy para clasificar
 @app.route('/proyecto/u-filter/backend/simple', methods=['POST'])
-def classify_text():
+def classify_text_legacy():
     try:
         classifier = pipeline(
             "zero-shot-classification",
@@ -85,8 +85,6 @@ def classify_text():
 def call_scrapper(domain):
     run_scrapper(domain)
 
-# 3. Definir el endpoint de la API para clasificación
-@app.route('/proyecto/u-filter/backend', methods=['POST'])
 def classify_text(text_to_classify):
     # Verificar que el modelo se haya cargado
     if not classifier:
