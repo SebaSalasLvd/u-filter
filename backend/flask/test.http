@@ -1,2 +1,6 @@
-POST http://127.0.0.1:7020/proyecto/u-filter/backend/scrapper/'asdas' HTTP/1.1
+POST http://127.0.0.1:7020/proyecto/u-filter/backend/scrapper HTTP/1.1
+content-type: application/json
 
+{
+    "domain": "https://www.u-cursos.cl/ingenieria/2/foro_institucion/"
+}

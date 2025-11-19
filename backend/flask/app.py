@@ -5,15 +5,11 @@ import os
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 import logging
-# from scrapper.scrapper import run_scrapper
-
 import requests
 import re
 import csv
 from bs4 import BeautifulSoup
 import psycopg2  # NUEVO (POSTGRES): Importamos psycopg2 en lugar de sqlite3
-import requests as _requests
-
 
 # ---Configuración de la Base de Datos ---
 # Modifica estos valores con los que creaste en el Paso 1
@@ -115,6 +111,7 @@ def run_scrapper(domain):
 
     if response.status_code == 200:
         print("Login exitoso!")
+        print("domain: ", domain)
 
         forum_url_base = domain
         numero_pagina = 0
@@ -125,8 +122,10 @@ def run_scrapper(domain):
             forum_page = session.get(forum_url)
 
             soup = BeautifulSoup(forum_page.text, 'html.parser')
+            #print(soup)
 
             mensajes = [
+                #div for div in soup.find_all("div", id=lambda value: value and value.startswith("raiz"))
                 div for div in soup.find_all('div', class_='new')
             ]
             if mensajes and numero_pagina < 735:
@@ -164,18 +163,12 @@ def run_scrapper(domain):
                     if texto == "Sin mensaje":
                         continue
 
-                    # Llamar al endpoint del backend para clasificar el texto
-                    try:
-                        resp = _requests.post(API_URL, json={"text": texto}, timeout=10)
-                        if resp.status_code != 200:
-                            print(f"Error al clasificar (status {resp.status_code}): {resp.text}")
-                            continue
-                        classification = resp.json()
-                        categoria = classification.get('label')
-                        score = classification.get('score')
-                    except Exception as e:
-                        print(f"Error llamando al API de clasificación: {e}")
+                    classification = classify_text(texto)
+                    if not classification:
+                        print("Error al clasificar el texto.")
                         continue
+                    categoria = classification['label']
+                    score = classification['score']
                     rows.append([autor, titulo, fecha_sql, texto, link, categoria, score, domain])
                 
                 if not seguir:
@@ -301,10 +294,18 @@ def classify_text_legacy():
         classifier = None
    
 # Llamada al scrapper cuando un usuario entra al foro 
-@app.route('/proyecto/u-filter/backend/scrapper/<string:domain>', methods=['POST'])
-def call_scrapper(domain):
-    run_scrapper(domain)
-    
+@app.route('/proyecto/u-filter/backend/scrapper', methods=['POST'])
+def call_scrapper():
+    try:
+        data = request.get_json()
+        domain = data['domain']
+        run_scrapper(domain)
+        return 'ok'
+    except Exception as e:
+        print(f"Error al llamar al scrapper: {e}")
+        return 'not ok'
+
+
 def classify_text(text_to_classify):
     # Verificar que el modelo se haya cargado
     if not classifier:
@@ -335,13 +336,15 @@ def classify_text(text_to_classify):
     except Exception as e:
         return None
 
-@app.route('/proyecto/u-filter/backend/list/<string:domain>', methods=['GET'])
-def list_by_domain(domain: str):
+@app.route('/proyecto/u-filter/backend/list', methods=['GET'])
+def list_by_domain():
     # Si no se tiene uri
     if not app.config.get('SQLALCHEMY_DATABASE_URI'):
         return jsonify({"error": "Ocurrio un error al obtener la base de datos"}), 500
 
     try:
+        data = request.get_json()
+        domain = data['domain']
         query = Classification.query.filter(Classification.post_url_domain == domain).order_by(Classification.created_at.desc())
         rows = query.all()
         out = []
