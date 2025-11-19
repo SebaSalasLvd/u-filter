@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Post } from "@/types/post";
 
 export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
@@ -9,7 +9,15 @@ export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
       <div className="post-header">
         <a href={post?.link} target="_blank" rel="noopener noreferrer">
           <div className="post-left">
-            <div className="post-title">{post.title}</div>
+            {(() => {
+              const rawTitle = post.title ?? "";
+              const displayTitle = rawTitle.length > 30 ? rawTitle.slice(0, 30) + "..." : rawTitle;
+              return (
+                <div className="post-title" title={rawTitle}>
+                  {displayTitle}
+                </div>
+              );
+            })()}
             <div className="post-meta">
               <div className="post-user">por {post.user ?? "unknown"}</div>
               <div className="post-date">{post.date ?? ''}</div>
