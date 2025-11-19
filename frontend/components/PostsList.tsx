@@ -72,14 +72,21 @@ export function PostsList({ posts }: PostsListProps) {
       </div>
 
       {filteredPosts.length === 0 ? (
-        <div className="empty-state">
-          No hay posts que coincidan con el filtro
-        </div>
+        <div className="empty-state">No hay posts que coincidan con el filtro</div>
       ) : (
         <div className="posts-list">
-          {filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
+          {(() => {
+            const seen = new Set<string>();
+            const nodes: any[] = [];
+            for (const post of filteredPosts) {
+              const keyBase = post.link ? String(post.link) : `${post.id}-${post.date ?? ''}`;
+              const key = keyBase;
+              if (seen.has(key)) continue;
+              seen.add(key);
+              nodes.push(<PostCard key={key} post={post} />);
+            }
+            return nodes;
+          })()}
         </div>
       )}
     </div>
