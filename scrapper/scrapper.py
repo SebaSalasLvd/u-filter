@@ -3,7 +3,8 @@ import re
 import csv
 from bs4 import BeautifulSoup
 import psycopg2  # NUEVO (POSTGRES): Importamos psycopg2 en lugar de sqlite3
-from backend.flask.app import classify_text
+import requests as _requests
+
 
 # ---Configuración de la Base de Datos ---
 # Modifica estos valores con los que creaste en el Paso 1
@@ -154,12 +155,18 @@ def run_scrapper(domain):
                     if texto == "Sin mensaje":
                         continue
 
-                    classification = classify_text(texto)
-                    if not classification:
-                        print("Error al clasificar el texto.")
+                    # Llamar al endpoint del backend para clasificar el texto
+                    try:
+                        resp = _requests.post(API_URL, json={"text": texto}, timeout=10)
+                        if resp.status_code != 200:
+                            print(f"Error al clasificar (status {resp.status_code}): {resp.text}")
+                            continue
+                        classification = resp.json()
+                        categoria = classification.get('label')
+                        score = classification.get('score')
+                    except Exception as e:
+                        print(f"Error llamando al API de clasificación: {e}")
                         continue
-                    categoria = classification['label']
-                    score = classification['score']
                     rows.append([autor, titulo, fecha_sql, texto, link, categoria, score, domain])
                 
                 if not seguir:
