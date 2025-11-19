@@ -9,7 +9,7 @@ Este proyecto tiene un desarrollo [frontend](frontend/README.md) y [backend](bac
 ---
 
 ### Stack
-React, TypeScript, Django, Python y wxt.
+React, TypeScript, Flask, Python y wxt.
 
 ---
 
@@ -34,78 +34,75 @@ Para configurar el entorno de frontend utilizando WXT:
 
     Alternativamente puedes hacerlo en Firefox con:
    ```bash
-    npm run dev:firefox
+   npm run dev:firefox
    ```
 
-### 2. Instalación del entorno de Python para usar Django
+   ---
 
-Para configurar el entorno de backend con Django:
+   **Stack:** React, TypeScript, Flask, Python, wxt.
 
-1. **Crear un entorno virtual:**
-   Crea un entorno virtual en Python ejecutando:
+   ---
 
+   ## Instrucciones para el Backend
+
+   Abajo están los pasos mínimos para dejar el backend en marcha en Windows (PowerShell). También incluyo alternativas para Linux/macOS.
+
+   1) Crear y activar un entorno virtual
+
+   PowerShell (Windows):
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+   Linux/macOS:
    ```bash
-   python -m venv nombrevenv
+   python -m venv .venv
+   source .venv/bin/activate
    ```
 
-2. **Activar el entorno virtual:**
-   En Windows, activa el entorno con:
+   2) Instalar dependencias
 
+   ```powershell
+   pip install -r .\backend\requirements.txt
+   ```
+
+   3) Configurar variables de entorno (BD)
+
+   Puedes copiar `backend\.env.example` a `backend\.env` y editarlo, o exportar variables en la sesión.
+
+   PowerShell (temporal para la sesión):
+   ```powershell
+   $env:DB_HOST = "localhost";
+   $env:DB_PORT = "5432";
+   $env:DB_NAME = "proyecto";
+   $env:DB_USER = "postgres";
+   $env:DB_PASSWORD = "password";
+   ```
+
+   Linux/macOS (export):
    ```bash
-   nombrevenv\Scripts\activate
+   export DB_HOST=localhost
+   export DB_PORT=5432
+   export DB_NAME=proyecto
+   export DB_USER=postgres
+   export DB_PASSWORD=password
    ```
 
-   En Linux/macOS, usa:
+   4) Aplicar migraciones SQL
 
-   ```bash
-   source nombrevenv/bin/activate
+   El proyecto incluye `backend/apply_migrations.py` que ejecuta los `*_up.sql` en `backend/migrations`.
+
+   ```powershell
+   python .\backend\apply_migrations.py
    ```
 
-3. **Instalar dependencias de backend:**
-   Instala los paquetes requeridos para Django:
+   Esto crea la tabla `classifications` (según `0001_create_classifications_up.sql`).
 
-   ```bash
-   pip install -r requirements.txt
+   5) Iniciar la aplicación
+
+   Forma directa (usa el `app.run` que viene en el archivo):
+   ```powershell
+   python .\backend\flask\app.py
    ```
 
-   *Nota:* El archivo `requirements.txt` está ubicado en la carpeta `backend`.
-
-### 3. Ejecutar el servidor Django y el modelo BERT
-
-Para iniciar el servidor y cargar el modelo BERT de Django:
-
-1. **Ejecutar el servidor:**
-   En la terminal, dentro de la carpeta de backend, ejecuta:
-
-   ```bash
-   python manage.py runserver
-   ```
-
-   Esto iniciará el servidor en `localhost:8000`.
-
-   *Nota:* Actualmente, al acceder a cualquier página de `localhost` podrías ver un error.
-
-### 4. Probar el modelo BERT
-
-Para probar la respuesta del modelo BERT, puedes hacer una petición POST utilizando `curl` o `Invoke-RestMethod`.
-
-#### En Windows (PowerShell):
-
-Ejecuta el siguiente comando en la terminal de PowerShell:
-
-```powershell
-Invoke-RestMethod -Uri "http://127.0.0.1:8000/u_filter/bert/" `
-    -Method POST `
-    -Headers @{ "Content-Type" = "application/json" } `
-    -Body '{"text": "texto que va a evaluar"}'
-```
-
-#### En Linux/macOS:
-
-Ejecuta el siguiente comando en la terminal:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/spanish-bert/ \
-    -H "Content-Type: application/json" \
-    -d '{"text": "texto que va a evaluar"}'
-```
