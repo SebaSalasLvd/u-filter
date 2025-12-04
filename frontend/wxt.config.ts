@@ -8,7 +8,7 @@ export default defineConfig({
       name: "U-Filter",
       version: "1.0",
       permissions: ["storage"],
-      host_permissions: ["https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/*", "*://*.u-cursos.cl/*"],
+      host_permissions: ["http://127.0.0.1:7020/proyecto/u-filter/*", "*://*.u-cursos.cl/*"],
       content_scripts: [
       {
           matches: ["*://*.u-cursos.cl/*"],
