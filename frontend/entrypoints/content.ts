@@ -2,45 +2,28 @@ import browser from "webextension-polyfill";
 
 export default defineContentScript({
   matches: ["*://*.u-cursos.cl/*"],
-  main() {
-    const posts = getAllPosts();
-    let current = 0;
-    async function sendNext() {
-      if (current >= posts.length) return;
+  async main() {
 
-      const post = posts[current];
-      try {
-        await browser.runtime.sendMessage({
-          action: "classifyPost",
-          post: post,
-        });
-      } catch (error) {
-        console.error("Error sending post:", error);
-      }
+    const baseForumUrl = getBaseForumUrl();
+    if (baseForumUrl) {
+      const resp = await browser.runtime.sendMessage({
+        action: "registerForum",
+        url: baseForumUrl,
+      });
 
-      current++;
-      await sendNext();
+      console.log("Wola", resp);
     }
-
-    sendNext();
   },
 });
 
-function getAllPosts() {
-  const posts = Array.from(document.querySelectorAll('[id^="raiz"]')).map(
-    (el) => ({
-      id: el.id || -1,
-      text: el.querySelector(".ta")?.textContent || "",
-      user: el.querySelector(".usuario")?.textContent || "",
-      title: el.querySelector("#mensaje-titulo")?.textContent || "",
-      date:
-        (el.querySelector(".tiempo_rel")?.textContent || "").match(
-          /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/
-        )?.[0] ?? " ",
-      link: el.querySelector(".permalink")?.getAttribute("href") || "",
-      label: "-",
-      score: "-",
-    })
-  );
-  return posts;
+
+function getBaseForumUrl(): string | null {
+  const url = new URL(window.location.href);
+  const parts = url.pathname.split("/");
+
+  const foroIndex = parts.indexOf("foro");
+  if (foroIndex === -1) return null;
+
+  const cleanPath = parts.slice(0, foroIndex + 1).join("/");
+  return `${url.origin}${cleanPath}`;
 }
