@@ -38,7 +38,7 @@ try:
     )
     print(f"✅ Modelo cargado en: {classifier.device}")
 except Exception as e:
-    print(f"❌ Error crítico cargando modelo: {e}")
+    print(f"Error crítico cargando modelo: {e}")
     exit()
 
 def prediccion_modelo(text):
@@ -138,7 +138,7 @@ def iniciar_driver():
 
 def login_ucursos(driver):
     """Realiza el login una única vez."""
-    print("🔑 Iniciando sesión en U-Cursos...")
+    print("Iniciando sesión en U-Cursos...")
     driver.get("https://www.u-cursos.cl/")
     
     wait = WebDriverWait(driver, 10)
