@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 USUARIO_UCURSOS = "usuario"
 CLAVE_UCURSOS   = "contraseña"
 MODEL_PATH = "/Users/inost/Documents/universidad/2025/proyecto_ia/entrenamiento/modelo_finetuned_ufilter"
-TIEMPO_ENTRE_EJECUCIONES = 3600  # 1 hora en segundos (ajusta esto a tu gusto)
+TIEMPO_ENTRE_EJECUCIONES = 3600 
 
 PG_CONFIG = {
     "dbname": "proyecto",
@@ -26,14 +26,14 @@ PG_CONFIG = {
     "port": "5432"
 }
 
-# --- CARGAR MODELO (Solo una vez al inicio) ---
+
 try:
     classifier = pipeline(
         "text-classification",
         model=MODEL_PATH,
         tokenizer=MODEL_PATH,
         device=0 if torch.cuda.is_available() else -1,
-        truncation=True,  # <--- Agregar esto
+        truncation=True, 
         max_length=512
     )
     print(f"✅ Modelo cargado en: {classifier.device}")
@@ -48,17 +48,37 @@ def prediccion_modelo(text):
     except:
         return None
 
-def get_existing_links():
+# --- BASE DE DATOS ---
+
+def get_urls_registrados():
+    """Obtiene la lista de URLs a scrapear."""
+    urls = []
+    conn = None
+    try:
+        conn = psycopg2.connect(**PG_CONFIG)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT link FROM link_registrados;")
+        rows = cur.fetchall()
+        # Convertir lista de tuplas [(url1,), (url2,)] a lista simple [url1, url2]
+        urls = [row[0] for row in rows]
+    except Exception as e:
+        print(f"Error obteniendo URLs: {e}")
+    finally:
+        if conn: conn.close()
+    return urls
+
+def get_existing_post_urls():
+    """Obtiene los posts que YA existen para no duplicarlos."""
     existing = set()
     conn = None
     try:
         conn = psycopg2.connect(**PG_CONFIG)
         cur = conn.cursor()
-        # Asegurar que la tabla existe
+        # Crear tabla si no existe
         cur.execute("""
             CREATE TABLE IF NOT EXISTS classifications (
                 id BIGSERIAL PRIMARY KEY,
-                post_url TEXT UNIQUE, -- Agregamos UNIQUE para evitar duplicados a nivel BD
+                post_url TEXT UNIQUE,
                 title TEXT,
                 input_text TEXT,
                 author TEXT,
@@ -75,109 +95,160 @@ def get_existing_links():
         for row in cur.fetchall():
             if row[0]: existing.add(row[0])
     except Exception as e:
-        print(f"Error BD: {e}")
+        print(f"Error BD Init: {e}")
     finally:
         if conn: conn.close()
     return existing
 
-def ejecutar_scrapper():
-    domain = "u-cursos.cl" # Dominio fijo o dinámico según prefieras
-    saved_links = get_existing_links()
-    rows = []
-    
-    print(f"\n--- INICIANDO CICLO DE SCRAPING: {time.strftime('%H:%M:%S')} ---")
-    
+
+
+def guardar_datos_masivo(rows):
+    """Guarda toda la lista de datos recolectados de una sola vez."""
+    if not rows:
+        print("No hay datos nuevos para guardar.")
+        return
+
+    print(f"Guardando {len(rows)} registros en Base de Datos...")
+    conn = None
+    try:
+        conn = psycopg2.connect(**PG_CONFIG)
+        cur = conn.cursor()
+        sql = """
+            INSERT INTO classifications (author, title, input_text, post_url, label, score, post_url_domain, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, now(), now())
+            ON CONFLICT (post_url) DO NOTHING;
+        """
+        cur.executemany(sql, rows)
+        conn.commit()
+        print("Guardado exitoso.")
+    except Exception as e:
+        print(f"Error SQL: {e}")
+    finally:
+        if conn: conn.close()
+
+# --- 3. LÓGICA DEL SCRAPER ---
+
+def iniciar_driver():
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    # options.add_argument("--headless") # Descomenta para que no se vea el navegador
+    # options.add_argument("--headless") 
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
-    driver = None
+def login_ucursos(driver):
+    """Realiza el login una única vez."""
+    print("🔑 Iniciando sesión en U-Cursos...")
+    driver.get("https://www.u-cursos.cl/")
+    
+    wait = WebDriverWait(driver, 10)
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-        driver.delete_all_cookies()
-
-        driver.get("https://www.u-cursos.cl/ingenieria/2/foro_institucion/")
-        
-        wait = WebDriverWait(driver, 10)
         wait.until(EC.presence_of_element_located((By.NAME, "username"))).send_keys(USUARIO_UCURSOS)
         driver.find_element(By.NAME, "password").send_keys(CLAVE_UCURSOS + Keys.RETURN)
+        time.sleep(5) # Esperar redirección
         
-        time.sleep(5)
-
         if "Visitante" in driver.page_source:
-            print("❌ Login fallido")
+            print("Login fallido (Checkea credenciales)")
+            return False
+        print("Login correcto.")
+        return True
+    except Exception as e:
+        print(f"Error en login: {e}")
+        return False
+
+def procesar_ciclo_completo():
+    # 1. OBTENER URLS OBJETIVO
+    target_urls = get_urls_registrados()
+    if not target_urls:
+        print("⚠️ No hay URLs registradas en la tabla 'link_registrados'.")
+        return
+
+    # 2. OBTENER LINKS YA PROCESADOS (Para evitar duplicados)
+    saved_links = get_existing_post_urls()
+    
+    # Lista para acumular TODOS los datos de TODAS las urls
+    todos_los_datos = []
+
+    driver = iniciar_driver()
+    
+    try:
+        # 3. LOGIN 
+        if not login_ucursos(driver):
+            driver.quit()
             return
 
-        # Logica simplificada de paginación
-        for offset in range(0, 3): # Ejemplo: Revisa las primeras 3 páginas (0, 1, 2)
-            print(f"📄 Revisando página {offset}...")
-            driver.get(f"https://www.u-cursos.cl/ingenieria/2/foro_institucion/?id_tema=&offset={offset}")
-            time.sleep(2)
+        # 4. ITERAR URLS REGISTRADA
+        for index, domain_url in enumerate(target_urls):
+            print(f"\n[{index+1}/{len(target_urls)}] Scrapeando: {domain_url}")
             
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            mensajes = soup.find_all('div', class_='new') or soup.find_all('div', class_='msg')
+            try:
+                # Paginación interna (ej: revisar primeras 3 páginas del foro) cambiar a lo necesario
+                for offset in range(0, 3): 
+                    # Construcción de URL con offset 
+                    url_paginada = f"{domain_url}?id_tema=&offset={offset}"
+                    driver.get(url_paginada)
+                    time.sleep(2) # Espera cortés
 
-            if not mensajes: break
+                    soup = BeautifulSoup(driver.page_source, 'html.parser')
+                    mensajes = soup.find_all('div', class_='new') or soup.find_all('div', class_='msg')
 
-            for mensaje in mensajes:
-                # Extraer Link
-                content_divs = [div for div in mensaje.find_all('div', class_='msg') if 'hijo' not in div.get('class', [])]
-                for content in content_divs:
-                    link_tag = content.find('a', class_='permalink')
-                    link = link_tag['href'] if link_tag else None
-                    
-                    if not link or link in saved_links: continue # Saltar si ya existe
+                    if not mensajes: 
+                        print("   No hay más mensajes en esta paginación.")
+                        break
 
-                    # Extraer Texto
-                    txt_tag = content.find('span', class_='ta')
-                    texto = txt_tag.get_text(separator="\n", strip=True) if txt_tag else ""
-                    if not texto or texto == "Sin mensaje": continue
+                    for mensaje in mensajes:
+                        # --- Extracción de datos (Misma lógica que tenías) ---
+                        content_divs = [div for div in mensaje.find_all('div', class_='msg') if 'hijo' not in div.get('class', [])]
+                        
+                        for content in content_divs:
+                            link_tag = content.find('a', class_='permalink')
+                            link = link_tag['href'] if link_tag else None
+                            
+                            # Validar existencia previa
+                            if not link or link in saved_links: continue 
 
-                    # Clasificar
-                    pred = prediccion_modelo(texto)
-                    if not pred: continue
+                            txt_tag = content.find('span', class_='ta')
+                            texto = txt_tag.get_text(separator="\n", strip=True) if txt_tag else ""
+                            if not texto or texto == "Sin mensaje": continue
 
-                    # Extraer Metadata
-                    titulo = mensaje.find('a', id='mensaje-titulo').text.strip() if mensaje.find('a', id='mensaje-titulo') else "Sin titulo"
-                    autor = content.find('a', class_='usuario').text.strip() if content.find('a', class_='usuario') else "Anon"
-                    
-                    # Guardar en memoria temporal
-                    rows.append((autor, titulo, texto, link, pred['label'], pred['score'], domain))
-                    saved_links.add(link) # Para no repetirlo en este mismo ciclo
-                    print(f"   Found: {pred['label']} ({pred['score']:.2f}) - {titulo[:30]}...")
+                            # Clasificar
+                            pred = prediccion_modelo(texto)
+                            if not pred: continue
 
-    except Exception as e:
-        print(f"❌ Error en Selenium: {e}")
+                            # Metadata
+                            titulo_tag = mensaje.find('a', id='mensaje-titulo')
+                            titulo = titulo_tag.text.strip() if titulo_tag else "Sin titulo"
+                            
+                            autor_tag = content.find('a', class_='usuario')
+                            autor = autor_tag.text.strip() if autor_tag else "Anon"
+                            
+                            # Agregar a la lista MASIVA
+                            todos_los_datos.append((autor, titulo, texto, link, pred['label'], pred['score'], domain_url))
+                            
+                            # Agregar a saved_links temporalmente para no repetir en este mismo ciclo
+                            saved_links.add(link) 
+                            
+                            print(f" Recolectado: {pred['label']} - {titulo[:20]}...")
+
+            except Exception as e:
+                print(f"Error procesando URL {domain_url}: {e}")
+                # Continuamos con la siguiente URL, no paramos todo el proceso
+                continue
+
+    except Exception as main_e:
+        print(f"Error crítico en el proceso de scraping: {main_e}")
     finally:
-        if driver: driver.quit()
+        print("Cerrando navegador...")
+        driver.quit()
 
-    # Guardar en BD al final del ciclo
-    if rows:
-        print(f"💾 Guardando {len(rows)} nuevos posts en BD...")
-        conn = None
-        try:
-            conn = psycopg2.connect(**PG_CONFIG)
-            cur = conn.cursor()
-            sql = """
-                INSERT INTO classifications (author, title, input_text, post_url, label, score, post_url_domain, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, now(), now())
-                ON CONFLICT (post_url) DO NOTHING;
-            """
-            cur.executemany(sql, rows)
-            conn.commit()
-            print("✅ Guardado exitoso.")
-        except Exception as e:
-            print(f"❌ Error SQL: {e}")
-        finally:
-            if conn: conn.close()
-    else:
-        print("💤 No hubo posts nuevos.")
+    # 5. FINALMENTE: LLENAR LA BASE DE DATOS
+    guardar_datos_masivo(todos_los_datos)
+
 
 # --- BUCLE PRINCIPAL ---
 if __name__ == "__main__":
     while True:
-        ejecutar_scrapper()
-        print(f"⏳ Esperando {TIEMPO_ENTRE_EJECUCIONES} segundos para la siguiente vuelta...")
+        procesar_ciclo_completo()
+        
+        print(f"\nCiclo terminado. Esperando {TIEMPO_ENTRE_EJECUCIONES} segundos...")
         time.sleep(TIEMPO_ENTRE_EJECUCIONES)

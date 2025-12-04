@@ -79,22 +79,6 @@ class Classification(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), server_default=db.func.now(), onupdate=db.func.now(), nullable=False)
 
 
-
-@app.route('/proyecto/u-filter/backend/scrapper', methods=['POST'])
-def call_scrapper():
-    try:
-        data = request.get_json()
-        domain = data.get('domain', 'unknown')
-        
-        # Ejecución directa (Síncrona)
-        # El navegador web esperará aquí hasta que termine Selenium
-        run_scrapper(domain)
-        
-        return jsonify({"status": "ok", "message": "Scraping finalizado"}), 200
-    except Exception as e:
-        print(f"Error endpoint: {e}")
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/proyecto/u-filter/backend/list', methods=['GET'])
 def list_by_domain():
     try:
