@@ -1,59 +1,62 @@
 import browser from "webextension-polyfill";
+import type { Forum } from "../types/forum";
 
 export default defineBackground(() => {
-  console.log("Hello background!", { id: browser.runtime.id });
+  console.log("Background running", { id: browser.runtime.id });
 });
 
+const BASE = "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend";
+
+type Message = { action: string; [k: string]: any };
+type Handler = (msg: Message, sender: browser.Runtime.MessageSender) => any;
+
+const handlers: Record<string, Handler> = {};
+const register = (name: string, fn: Handler) => (handlers[name] = fn);
+
+register("registerForum", async (msg: Message) => {
+  const url = msg.url as string;
+  if (!url) return { error: "missing url" };
+
+  try {
+    const existsResp = await fetch(
+      `${BASE}/foros?url=${encodeURIComponent(url)}`
+    );
+    const existsData = (await existsResp.json()) as { exists?: boolean; forum?: Forum };
+
+    if (existsData?.exists) {
+      return { status: "exists", forum: existsData.forum };
+    }
+
+    // register
+    const registerResp = await fetch(`${BASE}/foros`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+
+    const registerData = (await registerResp.json()) as Forum | { error?: string };
+    return {
+      status: registerResp.ok ? "created" : "error",
+      data: registerData,
+    };
+  } catch (err) {
+    console.error("registerForum failed:", err);
+    return { error: String(err) };
+  }
+});
+
+
 browser.runtime.onMessage.addListener(
-  async (message: any, sender: browser.Runtime.MessageSender): Promise<any> => {
-    if (message.action === "classifyPost") {
-      const post: any = message.post;
+  async (rawMsg: unknown, sender: browser.Runtime.MessageSender) => {
+    const msg = rawMsg as Message;
+    const fn = handlers[msg.action];
+    if (!fn) return { error: `Unknown action '${msg.action}'` };
 
-      // 1. Extract the domain from the sender's tab URL
-      let domain = "unknown";
-      if (sender.tab && sender.tab.url) {
-        try {
-          // This extracts just the domain (e.g., "www.reddit.com")
-          domain = new URL(sender.tab.url).hostname; 
-        } catch (e) {
-          console.error("Failed to parse domain from URL", e);
-        }
-      }
-
-      try {
-        const response = await fetch(
-          // "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend",
-          "http://127.0.0.1:7020/proyecto/u-filter/backend/scrapper",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            // 2. Add the domain to the JSON body
-            body: JSON.stringify({ 
-                text: post.text + post.title,
-                domain: domain 
-            }),
-          }
-        );
-        const data = await response.json();
-        post.label = data.label;
-        post.score = data.score.toFixed(2);
-
-        // Save to storage
-        const prev: any =
-          (await browser.storage.local.get("classified"))?.classified || [];
-        await browser.storage.local.set({ classified: [...prev, post] });
-      } catch (err) {
-        console.error("Classification failed:", err);
-      }
-
-      try {
-        await browser.runtime.sendMessage({
-          action: "postClassified",
-          post: post,
-        });
-      } catch (error) {
-        console.error("Error sending post:", error);
-      }
+    try {
+      return await fn(msg, sender);
+    } catch (err) {
+      console.error(`Handler '${msg.action}' failed:`, err);
+      return { error: String(err) };
     }
   }
 );
