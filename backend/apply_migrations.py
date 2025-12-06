@@ -2,6 +2,7 @@ import os
 import glob
 import psycopg2
 import logging
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -33,11 +34,11 @@ def apply_sql_file(cur, path):
 
 def main():
     migrations_dir = os.path.join(os.path.dirname(__file__), 'migrations')
-    pattern = os.path.join(migrations_dir, '*_up.sql')
-    files = sorted(glob.glob(pattern))
-    if not files:
-        logging.info('No se encontraron archivos de migración en %s', migrations_dir)
-        return
+    
+    mode = 'up'
+    if len(sys.argv) > 1 and sys.argv[1] == 'reset':
+        mode = 'reset'
+        logging.info("Modo RESET activado: Se eliminarán las tablas antes de crearlas.")
 
     params = get_db_conn_params()
     conn = None
@@ -45,10 +46,30 @@ def main():
         conn = psycopg2.connect(**params)
         conn.autocommit = False
         cur = conn.cursor()
-        for fpath in files:
+
+        if mode == 'reset':
+            pattern_down = os.path.join(migrations_dir, '*_down.sql')
+            files_down = sorted(glob.glob(pattern_down), reverse=True)
+            
+            if not files_down:
+                logging.warning("No se encontraron archivos *_down.sql para resetear.")
+            
+            for fpath in files_down:
+                apply_sql_file(cur, fpath)
+
+        pattern_up = os.path.join(migrations_dir, '*_up.sql')
+        files_up = sorted(glob.glob(pattern_up))
+        
+        if not files_up:
+            logging.info('No se encontraron archivos de migración UP en %s', migrations_dir)
+            return
+
+        for fpath in files_up:
             apply_sql_file(cur, fpath)
+
         conn.commit()
-        logging.info('Todas las migraciones aplicadas correctamente.')
+        logging.info('Migraciones aplicadas correctamente.')
+
     except Exception as e:
         if conn:
             conn.rollback()
