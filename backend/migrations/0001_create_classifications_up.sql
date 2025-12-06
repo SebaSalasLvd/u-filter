@@ -10,9 +10,11 @@ CREATE TABLE IF NOT EXISTS links (
 
 CREATE TABLE IF NOT EXISTS posts (
     id BIGSERIAL PRIMARY KEY,
+    title TEXT,
     content TEXT NOT NULL,
     author TEXT,
     post_date TEXT,
+    post_url TEXT,
     classification_label TEXT,
     classification_score DOUBLE PRECISION,
     model_used TEXT,
