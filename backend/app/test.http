@@ -1,0 +1,21 @@
+### 1. Agregar un Link
+POST http://127.0.0.1:7020/api/links
+Content-Type: application/json
+
+{
+    "url": "https://www.u-cursos.cl/ingenieria/2/foro_institucion",
+    "name": "Foro Institucion"
+}
+
+### 2. Ejecutar el Scraper Masivo, corre el scrapper en todos los links de foros (pesaito)
+POST http://127.0.0.1:7020/api/scraper/run-all
+Content-Type: application/json
+
+{}
+
+### 3. Ver los posts de un foro
+GET http://127.0.0.1:7020/api/scraper/list?domain=https://www.u-cursos.cl/ingenieria/2/foro_institucion
+
+
+### 4. Listar todos los links guardados en la DB
+GET http://127.0.0.1:7020/api/links
