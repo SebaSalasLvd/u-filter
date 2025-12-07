@@ -10,6 +10,17 @@ scraper_bp = Blueprint('scraper', __name__, url_prefix='/api/scraper')
 
 @scraper_bp.route('/run', methods=['POST'])
 def run_scraper():
+    """
+    Run the scraper for a specific domain.
+
+    Request Body:
+        - domain (str): The domain to scrape.
+
+    Responses:
+        - 200: Scraping results as JSON.
+        - 400: Missing or invalid domain.
+        - 500: Internal server error.
+    """
     data = request.get_json()
     domain = data.get('domain')
     if not domain:
@@ -24,6 +35,13 @@ def run_scraper():
 
 @scraper_bp.route('/run-all', methods=['POST'])
 def run_scraper_all():
+    """
+    Run the scraper for all registered links in the database.
+
+    Responses:
+        - 200: Results of the scraping process, including successes and failures.
+        - 500: Internal server error.
+    """
     try:
         links = Link.query.all()
         
@@ -68,6 +86,15 @@ def run_scraper_all():
 
 @scraper_bp.route('/list', methods=['GET'])
 def list_posts_by_domain():
+    """
+    List posts filtered by domain.
+
+    Query Parameters:
+        - domain (str, optional): The domain to filter posts by.
+
+    Responses:
+        - 200: A list of posts, limited to 100, ordered by creation date.
+    """
     domain = request.args.get('domain')
     
     query = Post.query.join(Link).order_by(Post.created_at.desc())
