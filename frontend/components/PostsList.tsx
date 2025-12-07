@@ -26,16 +26,14 @@ export function PostsList({ posts }: PostsListProps) {
     return Array.from(new Set(l));
   }, [posts]);
 
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>(posts);
-  useEffect(() => {
-    const filtered = posts.filter((post) => {
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
       const postYear = post.date?.substring(0, 4);
       const matchYear = selectedYear ? postYear === selectedYear : true;
       const matchLabel = selectedLabel ? post.label === selectedLabel : true;
       return matchYear && matchLabel;
     });
-    setFilteredPosts(filtered);
-  }, [selectedYear, selectedLabel, posts]);
+  }, [posts, selectedYear, selectedLabel]);
 
   if (posts.length === 0) {
     return <div className="empty-state">No hay posts clasificados aún</div>;
