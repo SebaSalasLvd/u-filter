@@ -6,6 +6,7 @@ from app.services.ai_service import AIService
 import logging
 import os
 import time
+import re
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -146,7 +147,10 @@ class ScraperService:
                         autor = autor_tag.text.strip() if autor_tag else "Desconocido"
 
                         fecha_tag = contenido.find('span', class_='tiempo_rel')
-                        fecha_texto = fecha_tag.text.strip() if fecha_tag else ""
+                        fecha_raw = fecha_tag.text.strip() if fecha_tag else ""
+                        
+                        fecha_match = re.search(r'\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}:\d{2})?', fecha_raw)
+                        fecha_texto = fecha_match.group(0) if fecha_match else fecha_raw
 
                         try:
                             classification = AIService.classify_bert(texto)
