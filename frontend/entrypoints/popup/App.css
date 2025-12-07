@@ -1,10 +1,13 @@
-/* popup container */
+body {
+  margin: 0;
+  padding: 0;
+  width: 780px;
+}
+
 .popup-root {
-  max-width: 600px;
-  max-height: 600px;
-  overflow-y: auto;
-  scrollbar-gutter: stable both-edges;
-  padding: 8px;
+  width: 780px;
+  min-height: 100vh;
+  padding: 12px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   background: #bf5677;
   background: linear-gradient(0deg,rgba(191, 86, 119, 1) 0%, rgba(171, 38, 58, 1) 100%);
@@ -12,14 +15,12 @@
   box-sizing: border-box;
 }
 
-/* header */
 .popup-title {
   margin: 0 0 10px 0;
   font-size: 16px;
   font-weight: 700;
 }
 
-/* post card */
 .post {
   border: 1px solid #d5d5d5;
   border-radius: 8px;
@@ -28,27 +29,34 @@
   background: #fafafa;
   box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   box-sizing: border-box;
-  width: 600;
+  width: 100%;
 }
 
 .posts-list {
   box-sizing: border-box;
-  width: 600;
+  width: 100%;
 }
 
 .post-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
 
-/* left column */
+.post-header > a {
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
 .post-left {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-width: 600px;
+  width: 100%;
 }
 
 .post-title {
@@ -58,19 +66,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
 }
 
-/* smaller, less prominent user name */
 .post-user {
   font-size: 12px;
   color: #bb8a1d;
 }
 
-/* right column */
 .post-right {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .post-meta {
@@ -80,7 +88,6 @@
   color: #666;
 }
 
-/* label / badge */
 .post-label {
   display: inline-block;
   padding: 4px 8px;
@@ -90,9 +97,9 @@
   border-radius: 999px;
   line-height: 1;
   text-transform: none;
+  white-space: nowrap;
 }
 
-/* toggle button */
 .toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -109,22 +116,19 @@
   outline-offset: 2px;
 }
 
-/* svg icon rotates when open */
 .toggle-btn .toggle-icon {
   fill: #333;
   transition: transform 180ms ease;
   transform-origin: center;
 }
 .toggle-btn.open .toggle-icon {
-  transform: rotate(0deg); /* right-facing */
+  transform: rotate(0deg);
 }
-/* closed state: icon points down */
+
 .toggle-btn .toggle-icon {
   transform: rotate(90deg);
 }
 
-/* collapsible text wrapper: animate height smoothly */
-/* technique: max-height with transition */
 .post-text-wrapper {
   max-height: 0;
   overflow: hidden;
@@ -132,28 +136,25 @@
   padding-top: 0;
 }
 
-/* when open, allow generous max-height */
 .post-text-wrapper.open {
-  max-height: 400px; /* adjust as needed */
+  max-height: 400px;
   padding-top: 8px;
+  overflow-y: auto;
 }
 
-/* the actual text area */
 .post-text {
   font-size: 13px;
   color: #333;
   line-height: 1.4;
-  white-space: pre-wrap; /* preserve newlines */
+  white-space: pre-wrap;
 }
 
-/* small responsive tweaks */
-@media (max-width: 600px) {
-  .popup-root { width: 600px; }
+@media (max-width: 780px) {
+  .popup-root { width: 100%; }
 }
 
-/* Navbar styles */
 .navbar {
-  width: 600px;
+  width: 100%;
   background-color: rgba(0, 0, 0, 0.1);
   margin-bottom: 10px;
   border-radius: 8px;
@@ -167,7 +168,8 @@
 
 .navbar-logo {
   height: 85px;
-  width: 600o;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 .filters {
