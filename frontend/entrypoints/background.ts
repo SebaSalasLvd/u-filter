@@ -1,62 +1,61 @@
 import browser from "webextension-polyfill";
-import type { Forum } from "../types/forum";
+import { api, ApiError } from "@/utils/api";
 
 export default defineBackground(() => {
-  console.log("Background running", { id: browser.runtime.id });
+  console.log("Background service worker started");
 });
 
-const BASE = "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/backend";
+type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string };
+type AddForumMsg = { action: "addForum"; url: string };
+type ExtensionMessage = CheckPostsMsg | AddForumMsg;
 
-type Message = { action: string; [k: string]: any };
-type Handler = (msg: Message, sender: browser.Runtime.MessageSender) => any;
+const handleMessage = async (message: ExtensionMessage) => {
+  try {
+    switch (message.action) {
+      case "checkAndFetchPosts":
+        return await handleCheckPosts(message.url);
+      case "addForum":
+        return await handleAddForum(message.url);
+      default:
+        throw new Error("Unknown action");
+    }
+  } catch (err) {
+    console.error(`Error handling ${message.action}:`, err);
+    return { 
+      status: "error", 
+      message: err instanceof Error ? err.message : "Unknown error" 
+    };
+  }
+};
 
-const handlers: Record<string, Handler> = {};
-const register = (name: string, fn: Handler) => (handlers[name] = fn);
-
-register("registerForum", async (msg: Message) => {
-  const url = msg.url as string;
-  if (!url) return { error: "missing url" };
+async function handleCheckPosts(url: string) {
+  if (!url) throw new Error("URL is required");
 
   try {
-    const existsResp = await fetch(
-      `${BASE}/foros?url=${encodeURIComponent(url)}`
-    );
-    const existsData = (await existsResp.json()) as { exists?: boolean; forum?: Forum };
-
-    if (existsData?.exists) {
-      return { status: "exists", forum: existsData.forum };
+    const { exists } = await api.searchForum(url);
+    
+    if (!exists) {
+      return { status: "forumNotFound" };
     }
 
-    // register
-    const registerResp = await fetch(`${BASE}/foros`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    });
+    const posts = await api.getPosts(url);
+    return { status: "postsFetched", posts };
 
-    const registerData = (await registerResp.json()) as Forum | { error?: string };
-    return {
-      status: registerResp.ok ? "created" : "error",
-      data: registerData,
-    };
   } catch (err) {
-    console.error("registerForum failed:", err);
-    return { error: String(err) };
-  }
-});
-
-
-browser.runtime.onMessage.addListener(
-  async (rawMsg: unknown, sender: browser.Runtime.MessageSender) => {
-    const msg = rawMsg as Message;
-    const fn = handlers[msg.action];
-    if (!fn) return { error: `Unknown action '${msg.action}'` };
-
-    try {
-      return await fn(msg, sender);
-    } catch (err) {
-      console.error(`Handler '${msg.action}' failed:`, err);
-      return { error: String(err) };
+    if (err instanceof ApiError && err.status === 404) {
+      return { status: "forumNotFound" };
     }
+    throw err;
   }
-);
+}
+
+async function handleAddForum(url: string) {
+  if (!url) throw new Error("URL is required");
+  
+  const forum = await api.addForum(url);
+  return { status: "forumAdded", forum };
+}
+
+browser.runtime.onMessage.addListener((msg, sender) => {
+  return handleMessage(msg as ExtensionMessage);
+});
