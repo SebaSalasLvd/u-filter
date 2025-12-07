@@ -6,12 +6,15 @@ export default defineContentScript({
 
     const baseForumUrl = getBaseForumUrl();
     if (baseForumUrl) {
-      const resp = await browser.runtime.sendMessage({
-        action: "registerForum",
-        url: baseForumUrl,
-      });
+      try {
+        const resp = await browser.runtime.sendMessage({
+          action: "checkAndFetchPosts",
+          url: baseForumUrl,
+        });
 
-      console.log("Wola", resp);
+        console.log("U-Filter status:", resp);
+      } catch (e) {
+      }
     }
   },
 });
