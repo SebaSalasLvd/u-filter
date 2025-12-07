@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import browser from "webextension-polyfill";
 import type { Post } from "@/types/post";
 
-export type ForumStatus = "loading" | "invalid_url" | "not_found" | "found" | "error";
+export type ForumStatus = "loading" | "invalid_url" | "not_found" | "found" | "error" | "created" | "scraping";
 
 type BackgroundResponse =
   | { status: "postsFetched"; posts: Post[] }
   | { status: "forumNotFound"; message: string }
   | { status: "forumAdded"; forum: unknown }
+  | { status: "scrapingCompleted"; result: unknown }
   | { status: "error"; message: string }
   | { error: string };
 
@@ -45,7 +46,11 @@ export function usePosts() {
 
       if (response.status === "postsFetched") {
         setPosts(response.posts);
-        setStatus("found");
+        if (response.posts.length === 0) {
+           setStatus("created"); 
+        } else {
+           setStatus("found");
+        }
       } else if (response.status === "forumNotFound") {
         setPosts([]);
         setStatus("not_found");
@@ -73,10 +78,41 @@ export function usePosts() {
       }
 
       if (response.status === "forumAdded") {
-        checkCurrentTab();
+        setStatus("created");
       }
     } catch (e) {
       console.error("Error adding forum:", e);
+      setStatus("error");
+    }
+  };
+
+  const scrapeForum = async () => {
+    if (!currentUrl) return;
+    setStatus("scraping");
+    try {
+      const response = (await browser.runtime.sendMessage({
+        action: "scrapeForum",
+        url: currentUrl,
+      })) as BackgroundResponse;
+
+      if ("error" in response || (response.status === "error")) {
+        console.error("Error scraping forum");
+        setStatus("error");
+        return;
+      }
+
+      if (response.status === "scrapingCompleted") {
+        const result = response.result as any;
+        if (result && result.error) {
+            console.error("Scraper error:", result.error);
+            setStatus("error");
+            return;
+        }
+        checkCurrentTab();
+      }
+    } catch (e) {
+      console.error("Error scraping forum:", e);
+      setStatus("error");
     }
   };
 
@@ -84,5 +120,5 @@ export function usePosts() {
     checkCurrentTab();
   }, [checkCurrentTab]);
 
-  return { posts, status, addForum, checkCurrentTab };
+  return { posts, status, addForum, scrapeForum, checkCurrentTab };
 }
