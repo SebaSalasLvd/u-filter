@@ -1,38 +1,88 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import browser from "webextension-polyfill";
 import type { Post } from "@/types/post";
 
+export type ForumStatus = "loading" | "invalid_url" | "not_found" | "found" | "error";
+
+type BackgroundResponse =
+  | { status: "postsFetched"; posts: Post[] }
+  | { status: "forumNotFound"; message: string }
+  | { status: "forumAdded"; forum: unknown }
+  | { status: "error"; message: string }
+  | { error: string };
+
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [status, setStatus] = useState<ForumStatus>("loading");
+  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
 
-  // Load stored posts
-  useEffect(() => {
-    const loadPosts = async () => {
-      const stored = await browser.storage.local.get("classified");
-      const storedPosts: Post[] = Array.isArray(stored?.classified)
-        ? stored.classified
-        : [];
-      setPosts(storedPosts);
-    };
-    loadPosts();
-  }, []);
-
-  // Listen for new classifications
-  useEffect(() => {
-    const handleMessage = (message: any) => {
-      if (message.action === "postClassified") {
-        const post: Post = message.post;
-        setPosts((prev) => {
-          const alreadyExists = prev.some((p) => p.id === post.id);
-          if (alreadyExists) return prev;
-          return [...prev, post];
-        });
+  const checkCurrentTab = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      const activeTab = tabs[0];
+      
+      if (!activeTab?.url) {
+        setStatus("invalid_url");
+        return;
       }
-    };
 
-    browser.runtime.onMessage.addListener(handleMessage);
-    return () => browser.runtime.onMessage.removeListener(handleMessage);
+      const forumUrl = new URL(activeTab.url);
+      
+      
+      setCurrentUrl(forumUrl);
+
+      const response = (await browser.runtime.sendMessage({
+        action: "checkAndFetchPosts",
+        url: forumUrl,
+      })) as BackgroundResponse;
+
+      if ("error" in response) {
+        console.error("Error checking forum:", response.error);
+        setStatus("error");
+        return;
+      }
+
+      if (response.status === "postsFetched") {
+        setPosts(response.posts);
+        setStatus("found");
+      } else if (response.status === "forumNotFound") {
+        setPosts([]);
+        setStatus("not_found");
+      } else {
+        console.error("Error checking forum:", response.message);
+        setStatus("error");
+      }
+    } catch (e) {
+      console.error("Error in usePosts:", e);
+      setStatus("error");
+    }
   }, []);
 
-  return { posts };
+  const addForum = async () => {
+    if (!currentUrl) return;
+    try {
+      const response = (await browser.runtime.sendMessage({
+        action: "addForum",
+        url: currentUrl,
+      })) as BackgroundResponse;
+
+      if ("error" in response) {
+        console.error("Error adding forum:", response.error);
+        return;
+      }
+
+      if (response.status === "forumAdded") {
+        checkCurrentTab();
+      }
+    } catch (e) {
+      console.error("Error adding forum:", e);
+    }
+  };
+
+  useEffect(() => {
+    checkCurrentTab();
+  }, [checkCurrentTab]);
+
+  return { posts, status, addForum, checkCurrentTab };
 }
