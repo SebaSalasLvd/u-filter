@@ -99,7 +99,7 @@ class ScraperService:
 
         try:
             if not ScraperService._login(driver):
-                return {"error": "No se pudo iniciar sesión"}
+                raise Exception("Fallo en la autenticación con U-Cursos")
 
             forum_url_base = domain.split('?')[0]
             
