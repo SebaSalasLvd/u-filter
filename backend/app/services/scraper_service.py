@@ -92,12 +92,14 @@ class ScraperService:
         Returns:
             dict: A summary of the scraping process, including the number of processed posts.
         """
-        driver = ScraperService._init_driver()
+        driver = None
         processed_count = 0
         
-        parent_link = Link.query.filter_by(url=domain).first()
-
         try:
+            driver = ScraperService._init_driver()
+            
+            parent_link = Link.query.filter_by(url=domain).first()
+
             if not ScraperService._login(driver):
                 raise Exception("Fallo en la autenticación con U-Cursos")
 
