@@ -5,12 +5,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 class AIService:
+    """
+    Service for handling AI-based text classification using pre-trained models.
+    """
+
     _pipeline = None
     _model_path = "Recognai/bert-base-spanish-wwm-cased-xnli"
 
     @classmethod
     def get_pipeline(cls):
-        """Carga diferida del modelo (Singleton)"""
+        """
+        Lazily load the BERT model pipeline (Singleton pattern).
+
+        Returns:
+            Pipeline: The zero-shot classification pipeline.
+        """
         if cls._pipeline is None:
             try:
                 cls._pipeline = pipeline(
@@ -26,6 +35,18 @@ class AIService:
 
     @staticmethod
     def classify_bert(text):
+        """
+        Classify text using the BERT zero-shot classification model.
+
+        Args:
+            text (str): The input text to classify.
+
+        Returns:
+            dict: Classification result with the top label, score, and model name.
+
+        Raises:
+            Exception: If the model pipeline is not available.
+        """
         classifier = AIService.get_pipeline()
         if not classifier:
             raise Exception("No disponible")

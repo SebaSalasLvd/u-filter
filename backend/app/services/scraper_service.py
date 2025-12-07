@@ -1,5 +1,3 @@
-import requests
-import re
 from bs4 import BeautifulSoup
 from app.extensions import db
 from app.models.link import Link
@@ -19,11 +17,20 @@ from webdriver_manager.chrome import ChromeDriverManager
 logger = logging.getLogger(__name__)
 
 class ScraperService:
+    """
+    Service for scraping data from U-Cursos forums and saving it to the database.
+    """
+
     LOGIN_URL = "https://www.u-cursos.cl/upasaporte/adi"
 
     @staticmethod
     def _init_driver():
-        """Inicializa el navegador Chrome con opciones optimizadas."""
+        """
+        Initialize a headless Chrome WebDriver with optimized options.
+
+        Returns:
+            WebDriver: An instance of the Chrome WebDriver.
+        """
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
         options.add_argument("--no-sandbox")
@@ -33,7 +40,15 @@ class ScraperService:
 
     @staticmethod
     def _login(driver):
-        """Maneja el inicio de sesión en U-Cursos usando Selenium."""
+        """
+        Handle login to U-Cursos using Selenium.
+
+        Args:
+            driver (WebDriver): The Selenium WebDriver instance.
+
+        Returns:
+            bool: True if login was successful, False otherwise.
+        """
         username = os.getenv("UCURSOS_USER")
         password = os.getenv("UCURSOS_PASSWORD")
 
@@ -68,7 +83,13 @@ class ScraperService:
     @staticmethod
     def run_scraper(domain):
         """
-        Ejecuta el scraping para un dominio específico usando Selenium.
+        Execute the scraping process for a specific domain.
+
+        Args:
+            domain (str): The URL of the forum to scrape.
+
+        Returns:
+            dict: A summary of the scraping process, including the number of processed posts.
         """
         driver = ScraperService._init_driver()
         processed_count = 0
