@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Post } from "@/types/post";
 
+const formatDate = (dateStr?: string) => {
+  if (!dateStr) return "";
+  const match = dateStr.match(/(\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}:\d{2})?)/);
+  return match ? match[0] : dateStr;
+};
+
 export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   const [open, setOpen] = useState(false);
 
@@ -20,7 +26,7 @@ export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
             })()}
             <div className="post-meta">
               <div className="post-user">por {post.user ?? "unknown"}</div>
-              <div className="post-date">{post.date ?? ''}</div>
+              <div className="post-date">{formatDate(post.date)}</div>
             </div>
           </div>
         </a>
