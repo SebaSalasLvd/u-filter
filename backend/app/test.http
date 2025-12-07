@@ -3,7 +3,7 @@ POST http://127.0.0.1:7020/api/links
 Content-Type: application/json
 
 {
-    "url": "https://www.u-cursos.cl/ingenieria/2/foro_institucion",
+    "url": "https://www.u-cursos.cl/ingenieria/2/foro_institucion/",
     "name": "Foro Institucion"
 }
 
