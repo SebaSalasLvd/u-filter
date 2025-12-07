@@ -30,4 +30,11 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ url, name: "Foro U-Cursos" }),
     }),
+
+  runScraper: (domain: string) => 
+    request<{ message: string; processed: number }>("/scraper/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain }),
+    }),
 };
