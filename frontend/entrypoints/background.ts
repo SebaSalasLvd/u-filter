@@ -7,7 +7,8 @@ export default defineBackground(() => {
 
 type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string };
 type AddForumMsg = { action: "addForum"; url: string };
-type ExtensionMessage = CheckPostsMsg | AddForumMsg;
+type ScrapeForumMsg = { action: "scrapeForum"; url: string };
+type ExtensionMessage = CheckPostsMsg | AddForumMsg | ScrapeForumMsg;
 
 const handleMessage = async (message: ExtensionMessage) => {
   try {
@@ -16,6 +17,8 @@ const handleMessage = async (message: ExtensionMessage) => {
         return await handleCheckPosts(message.url);
       case "addForum":
         return await handleAddForum(message.url);
+      case "scrapeForum":
+        return await handleScrapeForum(message.url);
       default:
         throw new Error("Unknown action");
     }
@@ -54,6 +57,13 @@ async function handleAddForum(url: string) {
   
   const forum = await api.addForum(url);
   return { status: "forumAdded", forum };
+}
+
+async function handleScrapeForum(url: string) {
+  if (!url) throw new Error("URL is required");
+  
+  const result = await api.runScraper(url);
+  return { status: "scrapingCompleted", result };
 }
 
 browser.runtime.onMessage.addListener((msg, sender) => {
