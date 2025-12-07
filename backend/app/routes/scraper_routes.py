@@ -19,7 +19,8 @@ def run_scraper():
         result = ScraperService.run_scraper(domain)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error processing scraper for domain {domain}: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @scraper_bp.route('/run-all', methods=['POST'])
 def run_scraper_all():
@@ -45,7 +46,7 @@ def run_scraper_all():
                     "details": scrape_result
                 })
             except Exception as e:
-                logger.error(f"Error scrapeando {link.url}: {e}")
+                logger.error(f"Error scrapeando {link.url}: {e}", exc_info=True)
                 errors.append({
                     "url": link.url,
                     "status": "error",
@@ -62,8 +63,8 @@ def run_scraper_all():
         })
 
     except Exception as e:
-        logger.error(f"Error crítico en run-all: {e}")
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error crítico en run-all: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
 
 @scraper_bp.route('/list', methods=['GET'])
 def list_posts_by_domain():

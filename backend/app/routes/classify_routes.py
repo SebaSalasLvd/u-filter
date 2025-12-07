@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 from app.services.ai_service import AIService
+import logging
+
+logger = logging.getLogger(__name__)
 
 classify_bp = Blueprint('classify', __name__, url_prefix='/api')
 
@@ -19,4 +22,5 @@ def classify():
             result = AIService.classify_bert(text)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error processing classification: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
