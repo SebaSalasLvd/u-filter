@@ -4,11 +4,11 @@ import type { Post, PaginationMeta, PaginatedResponse } from "@/types/post";
 
 export type ForumStatus = "loading" | "invalid_url" | "not_found" | "found" | "error" | "created" | "scraping";
 
-// Actualizamos los tipos para que coincidan con la respuesta paginada del background
 type BackgroundResponse =
   | { status: "postsFetched"; data: PaginatedResponse }
   | { status: "forumNotFound"; data: PaginatedResponse }
   | { status: "pageFetched"; data: PaginatedResponse }
+  | { status: "categoriesFetched"; categories: string[] }
   | { status: "forumAdded"; forum: unknown }
   | { status: "scrapingCompleted"; result: unknown }
   | { status: "scrapingAllCompleted"; result: unknown }
@@ -17,13 +17,21 @@ type BackgroundResponse =
 
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
-  // Estado inicial de paginación
-  const [meta, setMeta] = useState<PaginationMeta>({ page: 1, total_pages: 1, per_page: 10, total_items: 0 });
+  const [meta, setMeta] = useState<PaginationMeta>({ 
+    page: 1, 
+    total_pages: 1, 
+    per_page: 10, 
+    total_items: 0 
+  });
   const [status, setStatus] = useState<ForumStatus>("loading");
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  
+  // NUEVO: Estados para filtros de categorías
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
-  // Helper para actualizar posts y meta simultáneamente
   const handleData = (data: PaginatedResponse) => {
     if (!data) return;
     setPosts(data.posts || []);
@@ -31,6 +39,24 @@ export function usePosts() {
       setMeta(data.meta);
     }
   };
+
+  // NUEVO: Cargar categorías disponibles
+  const loadCategories = useCallback(async () => {
+    setIsLoadingCategories(true);
+    try {
+      const response = (await browser.runtime.sendMessage({
+        action: "getCategories"
+      })) as BackgroundResponse;
+
+      if (response.status === "categoriesFetched") {
+        setAvailableCategories(response.categories);
+      }
+    } catch (e) {
+      console.error("Error loading categories:", e);
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  }, []);
 
   const checkCurrentTab = useCallback(async () => {
     setStatus("loading");
@@ -49,6 +75,7 @@ export function usePosts() {
       const response = (await browser.runtime.sendMessage({
         action: "checkAndFetchPosts",
         url: forumUrl.toString(),
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined
       })) as BackgroundResponse;
 
       if ("error" in response) {
@@ -57,20 +84,14 @@ export function usePosts() {
         return;
       }
 
-      // Lógica unificada: tanto found como not_found traen datos paginados
       if (response.status === "postsFetched" || response.status === "forumNotFound") {
-        
-        // 1. Guardamos los datos (posts + meta)
         if ('data' in response) {
           handleData(response.data);
         }
 
-        // 2. Determinamos el status de la UI
         if (response.status === "forumNotFound") {
           setStatus("not_found");
         } else {
-          // Si es postsFetched, verificamos si hay posts para decidir si mostrar "created" (vacío) o "found"
-          // Usamos response.data.posts con seguridad
           const hasPosts = response.data && response.data.posts && response.data.posts.length > 0;
           setStatus(hasPosts ? "found" : "created");
         }
@@ -81,7 +102,7 @@ export function usePosts() {
       console.error("Error in usePosts:", e);
       setStatus("error");
     }
-  }, []);
+  }, [selectedCategories]);
 
   const addForum = async () => {
     if (!currentUrl) return;
@@ -128,6 +149,7 @@ export function usePosts() {
             return;
         }
         checkCurrentTab();
+        loadCategories(); // Recargar categorías después de scrapear
       }
     } catch (e) {
       console.error("Error scraping forum:", e);
@@ -143,6 +165,7 @@ export function usePosts() {
       });
       console.log("Update all response:", response);
       checkCurrentTab();
+      loadCategories(); // Recargar categorías después de actualizar todo
     } catch (e) {
       console.error("Error updating all:", e);
     } finally {
@@ -150,39 +173,62 @@ export function usePosts() {
     }
   };
 
-  // Función para cambiar de página
   const changePage = async (newPage: number) => {
     if (newPage < 1 || newPage > meta.total_pages) return;
     
     try {
       const response = (await browser.runtime.sendMessage({
         action: "fetchPage",
-        page: newPage
-      })) as BackgroundResponse; // Casting explícito
+        page: newPage,
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined
+      })) as BackgroundResponse;
 
       if (response.status === "pageFetched" && 'data' in response) {
         handleData(response.data);
-        // Scroll al top de la lista
         document.querySelector('.content-area')?.scrollTo(0,0);
       }
     } catch (e) {
       console.error("Error cambiando página:", e);
     }
   };
+
+  // NUEVO: Función para cambiar las categorías seleccionadas
+  const handleCategoriesChange = (categories: string[]) => {
+    setSelectedCategories(categories);
+    // Reset a página 1 cuando cambian los filtros
+    setMeta(prev => ({ ...prev, page: 1 }));
+  };
   
+  // Cargar categorías al montar
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
+
+  // Recargar posts cuando cambian las categorías
+  useEffect(() => {
+    if (currentUrl) {
+      checkCurrentTab();
+    }
+  }, [selectedCategories]);
+
   useEffect(() => {
     checkCurrentTab();
-  }, [checkCurrentTab]);
+  }, []);
 
   return { 
     posts, 
-    meta,           // EXPORTADO
-    changePage,     // EXPORTADO
+    meta,
+    changePage,
     status, 
     addForum, 
     scrapeForum, 
     checkCurrentTab, 
     triggerUpdateAll, 
-    isGlobalLoading 
+    isGlobalLoading,
+    // NUEVO: Exports de filtros
+    availableCategories,
+    selectedCategories,
+    handleCategoriesChange,
+    isLoadingCategories
   };
 }

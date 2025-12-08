@@ -33,12 +33,9 @@ def run_scraper():
         logger.error(f"Error processing scraper for domain {domain}: {e}", exc_info=True)
         return jsonify({"error": "Internal Server Error"}), 500
 
-# app/routes/scraper_routes.py
-
 @scraper_bp.route('/run-all', methods=['POST'])
 def run_scraper_all():
     try:
-        # Ahora llamamos al método estático del servicio
         result = ScraperService.run_all_scrapers()
         return jsonify(result)
     except Exception as e:
@@ -47,17 +44,35 @@ def run_scraper_all():
 
 @scraper_bp.route('/list', methods=['GET'])
 def list_posts_by_domain():
-    # Obtener parámetros de paginación (por defecto página 1, 20 items por página)
+    """
+    Lista posts con soporte para paginación y filtrado por categorías.
+    
+    Query Parameters:
+        - page (int): Número de página (default: 1)
+        - per_page (int): Items por página (default: 5)
+        - domain (str): Filtrar por dominio
+        - categories (str): Categorías separadas por coma (ej: "Duda,Aviso")
+    """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     domain = request.args.get('domain')
+    categories_str = request.args.get('categories', '')
     
-    query = Post.query.join(Link).order_by(Post.created_at.desc())
-    
+    # Construir query base - EXCLUIR posts con categoría "Otro"
+    query = Post.query.join(Link).filter(
+        Post.classification_label != 'Otro'
+    ).order_by(Post.created_at.desc())
+    '''
     if domain:
         query = query.filter(Link.url.contains(domain))
-        
-    # Usar paginate de SQLAlchemy
+    '''
+    # Filtrar por categorías si se proporcionan
+    if categories_str:
+        categories = [cat.strip() for cat in categories_str.split(',') if cat.strip()]
+        if categories:
+            query = query.filter(Post.classification_label.in_(categories))
+    
+    # Paginar resultados
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
     output = []
@@ -73,7 +88,7 @@ def list_posts_by_domain():
             "text": post.content,
             "created_at": post.created_at.isoformat()
         })
-        
+    
     return jsonify({
         "posts": output,
         "meta": {
@@ -83,5 +98,23 @@ def list_posts_by_domain():
             "total_items": pagination.total
         }
     })
+
+@scraper_bp.route('/categories', methods=['GET'])
+def get_categories():
+    """
+    Obtiene todas las categorías únicas disponibles en los posts.
+    """
+    try:
+        categories = Post.query.with_entities(
+            Post.classification_label
+        ).distinct().all()
         
-    return jsonify(output)
+        # Filtrar valores nulos o vacíos
+        category_list = [cat[0] for cat in categories if cat[0] and cat[0]!="Otro"]
+        
+        return jsonify({
+            "categories": sorted(category_list)
+        })
+    except Exception as e:
+        logger.error(f"Error obteniendo categorías: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500

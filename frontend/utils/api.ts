@@ -22,11 +22,25 @@ export const api = {
   searchForum: (url: string) => 
     request<{ exists: boolean; forum: Forum }>(`/links/search?url=${encodeURIComponent(url)}`),
   
-  // MODIFICADO: Acepta page y devuelve PaginatedResponse
-  getPosts: (page: number = 1, domain?: string) => 
-    request<PaginatedResponse>(
-      `/scraper/list?page=${page}${domain ? `&domain=${encodeURIComponent(domain)}` : ''}`
-    ),
+  // MODIFICADO: Acepta page, domain y categories
+  getPosts: (page: number = 1, domain?: string, categories?: string[]) => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    
+    if (domain) {
+      params.append('domain', domain);
+    }
+    
+    if (categories && categories.length > 0) {
+      params.append('categories', categories.join(','));
+    }
+    
+    return request<PaginatedResponse>(`/scraper/list?${params.toString()}`);
+  },
+  
+  // NUEVO: Obtener categorías disponibles
+  getCategories: () => 
+    request<{ categories: string[] }>('/scraper/categories'),
   
   addForum: (url: string) => 
     request<Forum>("/links", {
