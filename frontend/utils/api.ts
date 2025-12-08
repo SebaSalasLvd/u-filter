@@ -1,5 +1,6 @@
 import type { Forum } from "@/types/forum";
 import type { Post } from "@/types/post";
+import type { PaginatedResponse } from "@/types/post"; 
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:7020/api";
 
@@ -21,8 +22,11 @@ export const api = {
   searchForum: (url: string) => 
     request<{ exists: boolean; forum: Forum }>(`/links/search?url=${encodeURIComponent(url)}`),
   
-  getPosts: (domain: string) => 
-    request<Post[]>(`/scraper/list?domain=${encodeURIComponent(domain)}`),
+  // MODIFICADO: Acepta page y devuelve PaginatedResponse
+  getPosts: (page: number = 1, domain?: string) => 
+    request<PaginatedResponse>(
+      `/scraper/list?page=${page}${domain ? `&domain=${encodeURIComponent(domain)}` : ''}`
+    ),
   
   addForum: (url: string) => 
     request<Forum>("/links", {
@@ -36,5 +40,10 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ domain }),
+    }),
+
+  runScraperAll: () =>
+    request<{ total: number; successful: number }>("/scraper/run-all", {
+      method: "POST",
     }),
 };

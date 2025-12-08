@@ -8,3 +8,16 @@ export type Post = {
   date?: string;
   link?: string;
 };
+
+
+export type PaginationMeta = {
+  page: number;
+  per_page: number;
+  total_pages: number;
+  total_items: number;
+};
+
+export type PaginatedResponse = {
+  posts: Post[];
+  meta: PaginationMeta;
+};

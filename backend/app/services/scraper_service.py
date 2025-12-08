@@ -191,3 +191,33 @@ class ScraperService:
                 driver.quit()
 
         return {"message": "Scraping completado", "processed": processed_count}
+    
+    @staticmethod
+    def run_all_scrapers():
+        """
+        Ejecuta el scraper para todos los links registrados en la BD.
+        Retorna un resumen de la ejecución.
+        """
+        links = Link.query.all()
+        if not links:
+            return {"message": "No hay links registrados.", "results": []}
+
+        results = []
+        errors = []
+        logger.info(f"Iniciando tarea programada: Scraping masivo para {len(links)} foros.")
+
+        for link in links:
+            try:
+                # Usamos el método run_scraper que ya tienes definido
+                scrape_result = ScraperService.run_scraper(link.url)
+                results.append({"url": link.url, "status": "success", "details": scrape_result})
+            except Exception as e:
+                logger.error(f"Error auto-scraping {link.url}: {e}")
+                errors.append({"url": link.url, "status": "error", "error": str(e)})
+
+        return {
+            "total": len(links),
+            "successful": len(results),
+            "failed": len(errors),
+            "results": results
+        }
