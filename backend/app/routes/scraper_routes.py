@@ -74,6 +74,7 @@ def list_posts_by_domain():
         - page (int): Número de página (default: 1)
         - per_page (int): Items por página (default: 5)
         - domain (str): Filtrar por dominio
+        - date (str): Filtrar por año 
         - categories (str): Categorías separadas por coma (ej: "Duda,Aviso")
         - model (str): Filtrar por modelo utilizado ("bert", "gpt", "gpt-4o")
     """
@@ -81,6 +82,7 @@ def list_posts_by_domain():
     per_page = request.args.get('per_page', 5, type=int)
     categories_str = request.args.get('categories', '')
     model = request.args.get('model', '').lower()
+    date_str = request.args.get('date', '')
 
     query = Post.query.join(Link).filter(
         Post.classification_label != 'Otro'
@@ -93,6 +95,9 @@ def list_posts_by_domain():
     
     if model:
         query = query.filter(Post.model_used == model)
+
+    if date_str:
+        query = query.filter(Post.post_date.like(f"{date_str}%"))
             
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
