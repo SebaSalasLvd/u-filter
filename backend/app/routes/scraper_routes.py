@@ -55,24 +55,17 @@ def list_posts_by_domain():
     """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
-    domain = request.args.get('domain')
     categories_str = request.args.get('categories', '')
     
-    # Construir query base - EXCLUIR posts con categoría "Otro"
     query = Post.query.join(Link).filter(
         Post.classification_label != 'Otro'
     ).order_by(Post.created_at.desc())
-    '''
-    if domain:
-        query = query.filter(Link.url.contains(domain))
-    '''
-    # Filtrar por categorías si se proporcionan
+    
     if categories_str:
         categories = [cat.strip() for cat in categories_str.split(',') if cat.strip()]
         if categories:
             query = query.filter(Post.classification_label.in_(categories))
-    
-    # Paginar resultados
+            
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
     output = []
@@ -86,7 +79,8 @@ def list_posts_by_domain():
             "label": post.classification_label,
             "score": post.classification_score,
             "text": post.content,
-            "created_at": post.created_at.isoformat()
+            "created_at": post.created_at.isoformat(),
+            "model": post.model_used,
         })
     
     return jsonify({
