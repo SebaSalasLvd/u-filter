@@ -73,8 +73,12 @@ export const api = {
       body: JSON.stringify({ domain, model }),
     }),
 
-  runScraperAll: () =>
-    request<{ total: number; successful: number }>("/scraper/run-all", {
+  runScraperAll: (model: "gpt" | "bert" = "bert") => {
+    console.log("Modelo enviado al backend desde api.ts:", model);
+    return request<{ total: number; successful: number }>("/scraper/run-all", {
       method: "POST",
-    }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model }),
+    });
+  },
 };

@@ -156,17 +156,19 @@ export function usePosts() {
     }
   };
 
-  const triggerUpdateAll = async () => {
+  const triggerUpdateAll = async (model: "gpt" | "bert" = "bert") => {
+    console.log("Modelo recibido en usePosts.ts (triggerUpdateAll):", model);
     setIsGlobalLoading(true);
     try {
       const response = await browser.runtime.sendMessage({
         action: "scrapeAll",
+        model,
       });
-      console.log("Update all response:", response);
+      console.log("Respuesta del background script en usePosts.ts:", response);
       checkCurrentTab();
       loadCategories();
     } catch (e) {
-      console.error("Error updating all:", e);
+      console.error("Error en triggerUpdateAll:", e);
     } finally {
       setIsGlobalLoading(false);
     }

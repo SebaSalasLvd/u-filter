@@ -56,7 +56,10 @@ export default function App() {
         </div>
 
         <button 
-          onClick={triggerUpdateAll} 
+          onClick={() => {
+            console.log("Modelo seleccionado en App.tsx:", selectedModel);
+            triggerUpdateAll(selectedModel);
+          }}
           disabled={isGlobalLoading}
           className="action-btn btn-refresh"
         >

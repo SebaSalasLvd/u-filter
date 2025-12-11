@@ -40,12 +40,14 @@ const handleMessage = async (message: ExtensionMessage) => {
   }
 };
 
-async function handleScrapeAll() {
+async function handleScrapeAll(model: "gpt" | "bert" = "bert") {
+  console.log("Modelo recibido en background.ts (handleScrapeAll):", model);
   try {
-    const result = await api.runScraperAll();
+    const result = await api.runScraperAll(model);
+    console.log("Respuesta del backend en background.ts:", result);
     return { status: "scrapingAllCompleted", result };
   } catch (err) {
-    console.error("Error scraping all:", err);
+    console.error("Error en handleScrapeAll:", err);
     throw err;
   }
 }
