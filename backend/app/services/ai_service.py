@@ -71,4 +71,45 @@ class AIService:
 
     @staticmethod
     def classify_gpt(text):
-        pass
+        """
+        Classify text using openai API.
+
+        Args:
+            text (str): The input text to classify.
+
+        Returns:
+            dict: Classification result with the top label, score, and model name.
+
+        Raises:
+            Exception: If the openai API key is not configured or the API call fails.
+        """
+        api_key = os.getenv("API_KEY")
+        if not api_key:
+            raise Exception("API_KEY no configurada en el archivo .env")
+
+        client = OpenAI(api_key=api_key)
+
+        candidate_labels = ["Venta", "Compra", "Arriendo", "Clases Particulares", "Oferta laboral/practica", "Otro"]
+        prompt = (
+            f"Clasifica el siguiente texto en una de las siguientes categorías: {', '.join(candidate_labels)}.\n\n"
+            f"Texto: \"{text}\"\n"
+            f"Categoría:"
+        )
+
+        try:
+            response = client.responses.create(
+                model="gpt-4o",
+                input=prompt
+            )
+            label = response.output_text.strip()
+            if label not in candidate_labels:
+                label = "Otro"
+
+            return {
+                "label": label,
+                "score": None,
+                "model": "gpt-4o"
+            }
+        except Exception as e:
+            logger.error(f"Error clasificando con el modelo: {e}")
+            raise Exception("Error clasificando con el modelo")
