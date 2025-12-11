@@ -41,8 +41,25 @@ def run_scraper():
 
 @scraper_bp.route('/run-all', methods=['POST'])
 def run_scraper_all():
+    """
+    Run the scraper for all registered domains.
+
+    Request Body:
+        - model (str): The model to use for classification ("bert" or "gpt").
+
+    Responses:
+        - 200: Scraping results as JSON.
+        - 500: Internal server error.
+    """
+    data = request.get_json()
+    model = data.get('model', 'bert').lower()
+    logger.info(f"Modelo recibido en scraper_routes.py: {model}")
+
+    if model not in ['bert', 'gpt']:
+        return jsonify({"error": "Modelo inválido. Use 'bert' o 'gpt'."}), 400
+
     try:
-        result = ScraperService.run_all_scrapers()
+        result = ScraperService.run_all_scrapers(model=model)
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error crítico en run-all: {e}", exc_info=True)
