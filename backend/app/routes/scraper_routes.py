@@ -68,18 +68,20 @@ def run_scraper_all():
 @scraper_bp.route('/list', methods=['GET'])
 def list_posts_by_domain():
     """
-    Lista posts con soporte para paginación y filtrado por categorías.
+    Lista posts con soporte para paginación, filtrado por categorías y modelo.
     
     Query Parameters:
         - page (int): Número de página (default: 1)
         - per_page (int): Items por página (default: 5)
         - domain (str): Filtrar por dominio
         - categories (str): Categorías separadas por coma (ej: "Duda,Aviso")
+        - model (str): Filtrar por modelo utilizado ("bert", "gpt", "gpt-4o")
     """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     categories_str = request.args.get('categories', '')
-    
+    model = request.args.get('model', '').lower()
+
     query = Post.query.join(Link).filter(
         Post.classification_label != 'Otro'
     ).order_by(Post.created_at.desc())
@@ -88,6 +90,9 @@ def list_posts_by_domain():
         categories = [cat.strip() for cat in categories_str.split(',') if cat.strip()]
         if categories:
             query = query.filter(Post.classification_label.in_(categories))
+    
+    if model:
+        query = query.filter(Post.model_used == model)
             
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     
@@ -126,7 +131,6 @@ def get_categories():
             Post.classification_label
         ).distinct().all()
         
-        # Filtrar valores nulos o vacíos
         category_list = [cat[0] for cat in categories if cat[0] and cat[0]!="Otro"]
         
         return jsonify({
