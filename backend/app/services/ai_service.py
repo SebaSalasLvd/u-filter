@@ -1,6 +1,8 @@
 from transformers import pipeline
+from openai import OpenAI
 import torch
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -51,20 +53,22 @@ class AIService:
         if not classifier:
             raise Exception("No disponible")
         
-        candidate_labels = ["Venta", "Compra", "Arriendo", "Clases", "Otro"]
+        candidate_labels = ["Venta", "Compra", "Arriendo", "Clases Particulares", "Oferta laboral/practica"]
         result = classifier(text, candidate_labels)
         
+        threshold = 0.5
+        top_label = result['labels'][0]
+        top_score = result['scores'][0]
+
+        if top_score < threshold:
+            top_label = "Otro"
+
         return {
-            "label": result['labels'][0],
-            "score": result['scores'][0],
+            "label": top_label,
+            "score": top_score,
             "model": "bert"
         }
 
     @staticmethod
     def classify_gpt(text):
-        # TODO
-        return {
-            "label": "Simulado_GPT",
-            "score": 0.99,
-            "model": "gpt"
-        }
+        pass
