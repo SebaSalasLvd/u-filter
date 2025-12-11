@@ -5,34 +5,35 @@ export default defineBackground(() => {
   console.log("Background service worker started");
 });
 
-type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string; categories?: string[] };
+type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string; categories?: string[]; model?: "gpt" | "bert" };
 type AddForumMsg = { action: "addForum"; url: string };
-type ScrapeForumMsg = { action: "scrapeForum"; url: string };
+type ScrapeForumMsg = { action: "scrapeForum"; url: string; model: "gpt" | "bert" };
 type ScrapeAllMsg = { action: "scrapeAll"; model: "gpt" | "bert" };
-type FetchPageMsg = { action: "fetchPage"; page: number; categories?: string[] };
+type FetchPageMsg = { action: "fetchPage"; page: number; categories?: string[]; model?: "gpt" | "bert" };
 type GetCategoriesMsg = { action: "getCategories" };
+
 type ExtensionMessage = CheckPostsMsg | AddForumMsg | ScrapeForumMsg | ScrapeAllMsg | FetchPageMsg | GetCategoriesMsg;
 
 const handleMessage = async (message: ExtensionMessage) => {
   try {
     switch (message.action) {
       case "checkAndFetchPosts":
-        return await handleCheckPosts(message.url, message.categories);
+        return await handleCheckPosts(message.url, message.categories, message.model);
       case "addForum":
         return await handleAddForum(message.url);
       case "scrapeForum":
-        return await handleScrapeForum(message.url);
+        return await handleScrapeForum(message.url, message.model);
       case "scrapeAll":
         return await handleScrapeAll(message.model);
       case "fetchPage":
-        return await handleFetchPage(message.page, message.categories);
+        return await handleFetchPage(message.page, message.categories, message.model);
       case "getCategories":
         return await handleGetCategories();
       default:
         throw new Error("Unknown action");
     }
   } catch (err) {
-    console.error(`Error handling ${message.action}:`, err);
+    console.error(`Error handling ${(message as any).action}:`, err);
     return { 
       status: "error", 
       message: err instanceof Error ? err.message : "Unknown error" 
@@ -50,17 +51,15 @@ async function handleScrapeAll(model: "gpt" | "bert" = "bert") {
   }
 }
 
-async function handleCheckPosts(url: string, categories?: string[]) {
+async function handleCheckPosts(url: string, categories?: string[], model: "gpt" | "bert" | string = "bert") {
   if (!url) throw new Error("URL is required");
   
-  let globalData = { posts: [], meta: { page: 1, total_pages: 1 } };
+  let globalData = { posts: [], meta: { page: 1, total_pages: 1, per_page: 10, total_items: 0 } };
 
   try {
-    // Pedimos explícitamente la página 1 con categorías si existen
-    globalData = await api.getPosts(1, undefined, categories);
+    globalData = await api.getPosts(1, undefined, categories, model);
   } catch (err) {
     console.error("Error posts globales:", err);
-    return { status: "error", message: "Error al cargar posts" };
   }
 
   try {
@@ -78,9 +77,9 @@ async function handleCheckPosts(url: string, categories?: string[]) {
   }
 }
 
-async function handleFetchPage(page: number, categories?: string[]) {
+async function handleFetchPage(page: number, categories?: string[], model?: string) {
   try {
-    const data = await api.getPosts(page, undefined, categories);
+    const data = await api.getPosts(page, undefined, categories, model);
     return { status: "pageFetched", data };
   } catch (e) {
     throw e;
@@ -104,10 +103,10 @@ async function handleAddForum(url: string) {
   return { status: "forumAdded", forum };
 }
 
-async function handleScrapeForum(url: string) {
-  if (!url) throw new Error("URL is required");
-  
-  const result = await api.runScraper(url);
+async function handleScrapeForum(url: string, model: "gpt" | "bert") {
+  // Validación extra por seguridad
+  const safeModel = model === "gpt" ? "gpt" : "bert";
+  const result = await api.runScraper(url, safeModel);
   return { status: "scrapingCompleted", result };
 }
 

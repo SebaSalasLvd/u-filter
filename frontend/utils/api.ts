@@ -41,7 +41,7 @@ export const api = {
     }
   },
 
-  getPosts: (page: number = 1, domain?: string, categories?: string[]) => {
+  getPosts: (page: number = 1, domain?: string, categories?: string[], model?: string) => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     
@@ -51,6 +51,10 @@ export const api = {
     
     if (categories && categories.length > 0) {
       params.append('categories', categories.join(','));
+    }
+
+    if (model) {
+      params.append('model', model);
     }
     
     return request<PaginatedResponse>(`/scraper/list?${params.toString()}`);

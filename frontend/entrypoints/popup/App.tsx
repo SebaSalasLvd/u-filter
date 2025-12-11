@@ -5,6 +5,8 @@ import { PostsList } from "@/components/PostsList";
 import { NavBar } from "@/components/NavBar";
 
 export default function App() {
+  const [selectedModel, setSelectedModel] = useState<"gpt" | "bert">("bert");
+
   const { 
     posts, 
     status, 
@@ -18,9 +20,7 @@ export default function App() {
     selectedCategories,
     handleCategoriesChange,
     isLoadingCategories
-  } = usePosts();
-
-  const [selectedModel, setSelectedModel] = useState<"gpt" | "bert">("bert");
+  } = usePosts(selectedModel);
 
   const showAddButton = status === "not_found";
 

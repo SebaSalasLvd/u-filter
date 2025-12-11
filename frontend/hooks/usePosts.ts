@@ -15,7 +15,7 @@ type BackgroundResponse =
   | { status: "error"; message: string }
   | { error: string };
 
-export function usePosts() {
+export function usePosts(selectedModel: "gpt" | "bert") {
   const [posts, setPosts] = useState<Post[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({ 
     page: 1, 
@@ -73,7 +73,8 @@ export function usePosts() {
       const response = (await browser.runtime.sendMessage({
         action: "checkAndFetchPosts",
         url: forumUrl.toString(),
-        categories: selectedCategories.length > 0 ? selectedCategories : undefined
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        model: selectedModel,
       })) as BackgroundResponse;
 
       if ("error" in response) {
@@ -100,7 +101,7 @@ export function usePosts() {
       console.error("Error in usePosts:", e);
       setStatus("error");
     }
-  }, [selectedCategories]);
+  }, [selectedCategories, selectedModel]);
 
   const addForum = async () => {
     if (!currentUrl) return;
@@ -181,7 +182,8 @@ export function usePosts() {
       const response = (await browser.runtime.sendMessage({
         action: "fetchPage",
         page: newPage,
-        categories: selectedCategories.length > 0 ? selectedCategories : undefined
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+        model: selectedModel,
       })) as BackgroundResponse;
 
       if (response.status === "pageFetched" && 'data' in response) {
@@ -206,7 +208,7 @@ export function usePosts() {
     if (currentUrl) {
       checkCurrentTab();
     }
-  }, [selectedCategories]);
+  }, [selectedCategories, selectedModel]);
 
   useEffect(() => {
     checkCurrentTab();
