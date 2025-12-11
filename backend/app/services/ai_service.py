@@ -108,7 +108,7 @@ class AIService:
             return {
                 "label": label,
                 "score": None,
-                "model": "gpt-4o"
+                "model": "gpt"
             }
         except Exception as e:
             logger.error(f"Error clasificando con el modelo: {e}")
