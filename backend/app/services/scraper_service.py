@@ -82,12 +82,13 @@ class ScraperService:
             return False
 
     @staticmethod
-    def run_scraper(domain):
+    def run_scraper(domain, model):
         """
         Execute the scraping process for a specific domain.
 
         Args:
             domain (str): The URL of the forum to scrape.
+            model (str): The model to use for classification ("bert" or "gpt").
 
         Returns:
             dict: A summary of the scraping process, including the number of processed posts.
@@ -155,10 +156,13 @@ class ScraperService:
                         fecha_texto = fecha_match.group(0) if fecha_match else fecha_raw
 
                         try:
-                            classification = AIService.classify_bert(texto)
+                            if model == "gpt":
+                                classification = AIService.classify_gpt(texto + titulo)
+                            else:
+                                classification = AIService.classify_bert(texto + titulo)
                         except Exception as e:
                             logger.error(f"Error IA: {e}")
-                            classification = {"label": "Error", "score": 0.0, "model": "bert"}
+                            classification = {"label": "Error", "score": 0.0, "model": model}
 
                         try:                 
                             new_post = Post(
@@ -208,7 +212,6 @@ class ScraperService:
 
         for link in links:
             try:
-                # Usamos el método run_scraper que ya tienes definido
                 scrape_result = ScraperService.run_scraper(link.url)
                 results.append({"url": link.url, "status": "success", "details": scrape_result})
             except Exception as e:

@@ -15,6 +15,7 @@ def run_scraper():
 
     Request Body:
         - domain (str): The domain to scrape.
+        - model (str): The model to use for classification ("bert" or "gpt").
 
     Responses:
         - 200: Scraping results as JSON.
@@ -23,11 +24,16 @@ def run_scraper():
     """
     data = request.get_json()
     domain = data.get('domain')
+    model = data.get('model', 'bert').lower()
+
     if not domain:
         return jsonify({"error": "Domain es requerido"}), 400
-    
+
+    if model not in ['bert', 'gpt']:
+        return jsonify({"error": "Modelo inválido. Use 'bert' o 'gpt'."}), 400
+
     try:
-        result = ScraperService.run_scraper(domain)
+        result = ScraperService.run_scraper(domain, model)
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error processing scraper for domain {domain}: {e}", exc_info=True)
