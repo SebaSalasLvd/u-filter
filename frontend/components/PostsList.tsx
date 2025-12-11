@@ -25,7 +25,7 @@ export function PostsList({
 }: PostsListProps) {
   const [isCategoryFilterExpanded, setIsCategoryFilterExpanded] = useState(false);
 
-  const years = ["2025", "2024", "2023", "2022", "2021", "2020"];
+  const years = ["2025", "2024", "2023"];
 
   const filteredPosts = posts;
 
