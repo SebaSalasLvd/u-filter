@@ -29,6 +29,7 @@ export function usePosts(selectedModel: "gpt" | "bert") {
   
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("");
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
   const handleData = (data: PaginatedResponse) => {
@@ -75,6 +76,7 @@ export function usePosts(selectedModel: "gpt" | "bert") {
         url: forumUrl.toString(),
         categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         model: selectedModel,
+        year: selectedYear || undefined,
       })) as BackgroundResponse;
 
       if ("error" in response) {
@@ -101,7 +103,7 @@ export function usePosts(selectedModel: "gpt" | "bert") {
       console.error("Error in usePosts:", e);
       setStatus("error");
     }
-  }, [selectedCategories, selectedModel]);
+  }, [selectedCategories, selectedModel, selectedYear]);
 
   const addForum = async () => {
     if (!currentUrl) return;
@@ -184,6 +186,7 @@ export function usePosts(selectedModel: "gpt" | "bert") {
         page: newPage,
         categories: selectedCategories.length > 0 ? selectedCategories : undefined,
         model: selectedModel,
+        year: selectedYear || undefined,
       })) as BackgroundResponse;
 
       if (response.status === "pageFetched" && 'data' in response) {
@@ -199,6 +202,11 @@ export function usePosts(selectedModel: "gpt" | "bert") {
     setSelectedCategories(categories);
     setMeta(prev => ({ ...prev, page: 1 }));
   };
+
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    setMeta(prev => ({ ...prev, page: 1 }));
+  };
   
   useEffect(() => {
     loadCategories();
@@ -208,7 +216,7 @@ export function usePosts(selectedModel: "gpt" | "bert") {
     if (currentUrl) {
       checkCurrentTab();
     }
-  }, [selectedCategories, selectedModel]);
+  }, [selectedCategories, selectedModel, selectedYear]);
 
   useEffect(() => {
     checkCurrentTab();
@@ -227,6 +235,8 @@ export function usePosts(selectedModel: "gpt" | "bert") {
     availableCategories,
     selectedCategories,
     handleCategoriesChange,
-    isLoadingCategories
+    isLoadingCategories,
+    selectedYear,
+    handleYearChange
   };
 }

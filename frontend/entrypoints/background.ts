@@ -5,11 +5,11 @@ export default defineBackground(() => {
   console.log("Background service worker started");
 });
 
-type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string; categories?: string[]; model?: "gpt" | "bert" };
+type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string; categories?: string[]; model?: "gpt" | "bert"; year?: string };
 type AddForumMsg = { action: "addForum"; url: string };
 type ScrapeForumMsg = { action: "scrapeForum"; url: string; model: "gpt" | "bert" };
 type ScrapeAllMsg = { action: "scrapeAll"; model: "gpt" | "bert" };
-type FetchPageMsg = { action: "fetchPage"; page: number; categories?: string[]; model?: "gpt" | "bert" };
+type FetchPageMsg = { action: "fetchPage"; page: number; categories?: string[]; model?: "gpt" | "bert"; year?: string };
 type GetCategoriesMsg = { action: "getCategories" };
 
 type ExtensionMessage = CheckPostsMsg | AddForumMsg | ScrapeForumMsg | ScrapeAllMsg | FetchPageMsg | GetCategoriesMsg;
@@ -18,7 +18,7 @@ const handleMessage = async (message: ExtensionMessage) => {
   try {
     switch (message.action) {
       case "checkAndFetchPosts":
-        return await handleCheckPosts(message.url, message.categories, message.model);
+        return await handleCheckPosts(message.url, message.categories, message.model, message.year);
       case "addForum":
         return await handleAddForum(message.url);
       case "scrapeForum":
@@ -26,7 +26,7 @@ const handleMessage = async (message: ExtensionMessage) => {
       case "scrapeAll":
         return await handleScrapeAll(message.model);
       case "fetchPage":
-        return await handleFetchPage(message.page, message.categories, message.model);
+        return await handleFetchPage(message.page, message.categories, message.model, message.year);
       case "getCategories":
         return await handleGetCategories();
       default:
@@ -51,13 +51,13 @@ async function handleScrapeAll(model: "gpt" | "bert" = "bert") {
   }
 }
 
-async function handleCheckPosts(url: string, categories?: string[], model: "gpt" | "bert" | string = "bert") {
+async function handleCheckPosts(url: string, categories?: string[], model: "gpt" | "bert" | string = "bert", year?: string) {
   if (!url) throw new Error("URL is required");
   
   let globalData = { posts: [], meta: { page: 1, total_pages: 1, per_page: 10, total_items: 0 } };
 
   try {
-    globalData = await api.getPosts(1, undefined, categories, model);
+    globalData = await api.getPosts(1, undefined, categories, model, year);
   } catch (err) {
     console.error("Error posts globales:", err);
   }
@@ -77,9 +77,9 @@ async function handleCheckPosts(url: string, categories?: string[], model: "gpt"
   }
 }
 
-async function handleFetchPage(page: number, categories?: string[], model?: string) {
+async function handleFetchPage(page: number, categories?: string[], model?: string, year?: string) {
   try {
-    const data = await api.getPosts(page, undefined, categories, model);
+    const data = await api.getPosts(page, undefined, categories, model, year);
     return { status: "pageFetched", data };
   } catch (e) {
     throw e;

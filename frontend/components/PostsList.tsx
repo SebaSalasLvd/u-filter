@@ -9,6 +9,8 @@ interface PostsListProps {
   selectedModel: "gpt" | "bert";
   onCategoriesChange: (categories: string[]) => void;
   isLoadingCategories?: boolean;
+  selectedYear: string;
+  onYearChange: (year: string) => void;
 }
 
 export function PostsList({ 
@@ -17,33 +19,15 @@ export function PostsList({
   selectedCategories,
   selectedModel,
   onCategoriesChange,
-  isLoadingCategories = false
+  isLoadingCategories = false,
+  selectedYear,
+  onYearChange
 }: PostsListProps) {
-  const [selectedYear, setSelectedYear] = useState<string>("");
   const [isCategoryFilterExpanded, setIsCategoryFilterExpanded] = useState(false);
 
-  const years = useMemo(() => {
-    const year = posts
-      .map((p) => {
-        if (!p.date) return null;
-        const match = p.date.match(/^(\d{4})/);
-        return match ? match[1] : null;
-      })
-      .filter(Boolean) as string[];
-    return Array.from(new Set(year)).sort((a, b) => Number(b) - Number(a));
-  }, [posts]);
+  const years = ["2025", "2024", "2023", "2022", "2021", "2020"];
 
-  const filteredPosts = useMemo(() => {
-    return posts.filter((post) => {
-      const postYear = post.date?.substring(0, 4);
-      const matchYear = selectedYear ? postYear === selectedYear : true;
-      const matchCategories = selectedCategories.length > 0 
-        ? selectedCategories.includes(post.label ?? "Otro")
-        : true;
-      const matchModel = post.model === selectedModel;
-      return matchYear && matchCategories && matchModel;
-    });
-  }, [posts, selectedYear, selectedCategories, selectedModel]);
+  const filteredPosts = posts;
 
   const toggleCategory = (category: string) => {
     if (selectedCategories.includes(category)) {
@@ -73,7 +57,7 @@ export function PostsList({
     return colors[category] || '#64748b';
   };
 
-  if (posts.length === 0) {
+  if (posts.length === 0 && selectedCategories.length === 0 && !selectedYear) {
     return <div className="empty-state">No hay posts clasificados aún</div>;
   }
 
@@ -84,7 +68,7 @@ export function PostsList({
           <label className="filter-label">📅 Año</label>
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
+            onChange={(e) => onYearChange(e.target.value)}
             className="select-year"
           >
             <option value="">Todos los años</option>

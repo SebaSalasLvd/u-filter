@@ -19,7 +19,9 @@ export default function App() {
     availableCategories,
     selectedCategories,
     handleCategoriesChange,
-    isLoadingCategories
+    isLoadingCategories,
+    selectedYear,
+    handleYearChange
   } = usePosts(selectedModel);
 
   const showAddButton = status === "not_found";
@@ -116,6 +118,8 @@ export default function App() {
                   onCategoriesChange={handleCategoriesChange}
                   isLoadingCategories={isLoadingCategories}
                   selectedModel={selectedModel}
+                  selectedYear={selectedYear}
+                  onYearChange={handleYearChange}
                 />
                 
                 {meta.total_pages > 1 && (
