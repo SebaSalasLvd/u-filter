@@ -6,6 +6,7 @@ interface PostsListProps {
   posts: Post[];
   availableCategories: string[];
   selectedCategories: string[];
+  selectedModel: "gpt" | "bert";
   onCategoriesChange: (categories: string[]) => void;
   isLoadingCategories?: boolean;
 }
@@ -14,6 +15,7 @@ export function PostsList({
   posts, 
   availableCategories,
   selectedCategories,
+  selectedModel,
   onCategoriesChange,
   isLoadingCategories = false
 }: PostsListProps) {
@@ -22,7 +24,7 @@ export function PostsList({
 
   const years = useMemo(() => {
     const year = posts
-.map((p) => {
+      .map((p) => {
         if (!p.date) return null;
         const match = p.date.match(/^(\d{4})/);
         return match ? match[1] : null;
@@ -35,9 +37,14 @@ export function PostsList({
     return posts.filter((post) => {
       const postYear = post.date?.substring(0, 4);
       const matchYear = selectedYear ? postYear === selectedYear : true;
-      return matchYear;
+      const matchCategories = selectedCategories.length > 0 
+        ? selectedCategories.includes(post.label ?? "Otro")
+        : true;
+      const matchModel = post.model === selectedModel;
+      console.log(selectedModel)
+      return matchYear && matchCategories && matchModel;
     });
-  }, [posts, selectedYear]);
+  }, [posts, selectedYear, selectedCategories, selectedModel]);
 
   const toggleCategory = (category: string) => {
     if (selectedCategories.includes(category)) {
@@ -57,13 +64,12 @@ export function PostsList({
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      'Duda': '#3b82f6',
-      'Aviso': '#f59e0b',
-      'Urgente': '#ef4444',
-      'Material': '#8b5cf6',
-      'Consulta': '#06b6d4',
-      'Anuncio': '#10b981',
-      'Error': '#6b7280',
+      'Compra': '#3b82f6',
+      'Venta': '#f59e0b',
+      'Arriendo': '#ef4444',
+      'Clases Particulares': '#8b5cf6',
+      'Oferta laboral/practica': '#06b6d4',
+      'Otro': '#6b7280',
     };
     return colors[category] || '#64748b';
   };
@@ -74,10 +80,7 @@ export function PostsList({
 
   return (
     <div>
-      {/* Filtros superiores: Año y Categorías */}
       <div className="filters-container">
-        
-        {/* Filtro de Año */}
         <div className="filter-section">
           <label className="filter-label">📅 Año</label>
           <select
@@ -94,7 +97,6 @@ export function PostsList({
           </select>
         </div>
 
-        {/* Filtro de Categorías */}
         {availableCategories.length > 0 && (
           <div className="filter-section category-filter-wrapper">
             <label className="filter-label">🏷️ Categorías</label>
@@ -165,7 +167,6 @@ export function PostsList({
         )}
       </div>
 
-      {/* Indicador de filtros activos */}
       {selectedCategories.length > 0 && (
         <div className="active-filters-badge">
           <span>
@@ -180,7 +181,6 @@ export function PostsList({
         </div>
       )}
 
-      {/* Lista de Posts */}
       {filteredPosts.length === 0 ? (
         <div className="empty-state">No hay posts que coincidan con el filtro</div>
       ) : (
@@ -189,7 +189,7 @@ export function PostsList({
             const seen = new Set<string>();
             const nodes: any[] = [];
             for (const post of filteredPosts) {
-              const keyBase = post.link ? String(post.link) : `${post.id}-${post.date ?? ''}`;
+              const keyBase = post.url ? String(post.url) : `${post.id}-${post.date ?? ''}`;
               const key = keyBase;
               if (seen.has(key)) continue;
               seen.add(key);

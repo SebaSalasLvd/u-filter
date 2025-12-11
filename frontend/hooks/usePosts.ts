@@ -27,7 +27,6 @@ export function usePosts() {
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   
-  // NUEVO: Estados para filtros de categorías
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -40,7 +39,6 @@ export function usePosts() {
     }
   };
 
-  // NUEVO: Cargar categorías disponibles
   const loadCategories = useCallback(async () => {
     setIsLoadingCategories(true);
     try {
@@ -126,13 +124,14 @@ export function usePosts() {
     }
   };
 
-  const scrapeForum = async () => {
+  const scrapeForum = async (model: "gpt" | "bert" = "bert") => {
     if (!currentUrl) return;
     setStatus("scraping");
     try {
       const response = (await browser.runtime.sendMessage({
         action: "scrapeForum",
         url: currentUrl,
+        model,
       })) as BackgroundResponse;
 
       if ("error" in response || (response.status === "error")) {
@@ -149,7 +148,7 @@ export function usePosts() {
             return;
         }
         checkCurrentTab();
-        loadCategories(); // Recargar categorías después de scrapear
+        loadCategories();
       }
     } catch (e) {
       console.error("Error scraping forum:", e);
@@ -165,7 +164,7 @@ export function usePosts() {
       });
       console.log("Update all response:", response);
       checkCurrentTab();
-      loadCategories(); // Recargar categorías después de actualizar todo
+      loadCategories();
     } catch (e) {
       console.error("Error updating all:", e);
     } finally {
@@ -192,19 +191,15 @@ export function usePosts() {
     }
   };
 
-  // NUEVO: Función para cambiar las categorías seleccionadas
   const handleCategoriesChange = (categories: string[]) => {
     setSelectedCategories(categories);
-    // Reset a página 1 cuando cambian los filtros
     setMeta(prev => ({ ...prev, page: 1 }));
   };
   
-  // Cargar categorías al montar
   useEffect(() => {
     loadCategories();
   }, [loadCategories]);
 
-  // Recargar posts cuando cambian las categorías
   useEffect(() => {
     if (currentUrl) {
       checkCurrentTab();
@@ -225,7 +220,6 @@ export function usePosts() {
     checkCurrentTab, 
     triggerUpdateAll, 
     isGlobalLoading,
-    // NUEVO: Exports de filtros
     availableCategories,
     selectedCategories,
     handleCategoriesChange,

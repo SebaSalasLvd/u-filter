@@ -1,3 +1,4 @@
+import { useState } from "react";
 import "./App.css";
 import { usePosts } from "@/hooks/usePosts";
 import { PostsList } from "@/components/PostsList";
@@ -19,14 +20,20 @@ export default function App() {
     isLoadingCategories
   } = usePosts();
 
+  const [selectedModel, setSelectedModel] = useState<"gpt" | "bert">("bert");
+
   const showAddButton = status === "not_found";
+
+  const handleScrapeForum = async () => {
+    if (status === "created" || status === "not_found") {
+      await scrapeForum(selectedModel);
+    }
+  };
 
   return (
     <div className="popup-root">
-      {/* 1. BARRA DE NAVEGACIÓN */}
       <NavBar />
       
-      {/* 2. HEADER SUPERIOR: Botones de Acción */}
       <div className="top-header">
         <div>
           {showAddButton && (
@@ -34,6 +41,18 @@ export default function App() {
               + Agregar este Foro
             </button>
           )}
+        </div>
+
+        <div className="model-selector">
+          <select
+            id="model-select"
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value as "gpt" | "bert")}
+            className="select-model"
+          >
+            <option value="bert">BERT</option>
+            <option value="gpt">GPT</option>
+          </select>
         </div>
 
         <button 
@@ -45,11 +64,7 @@ export default function App() {
         </button>
       </div>
     
-      
-      {/* 3. ÁREA DE CONTENIDO PRINCIPAL */}
       <div className="content-area">
-        
-        {/* Estados de Carga / Proceso */}
         {status === "loading" && <div className="empty-state">Cargando...</div>}
         
         {status === "scraping" && (
@@ -75,7 +90,7 @@ export default function App() {
             {status === "created" && (
               <div style={{ marginBottom: 10, textAlign: 'center' }}>
                  <p style={{fontSize: '0.8em', color: '#666'}}>Foro registrado. Falta analizar.</p>
-                 <button onClick={scrapeForum} className="action-btn btn-add">
+                 <button onClick={handleScrapeForum} className="action-btn btn-add">
                    Analizar Posts Ahora
                  </button>
               </div>
@@ -91,16 +106,15 @@ export default function App() {
               </div>
             ) : (
               <>
-                {/* Lista de Posts con Filtros Integrados */}
                 <PostsList 
                   posts={posts}
                   availableCategories={availableCategories}
                   selectedCategories={selectedCategories}
                   onCategoriesChange={handleCategoriesChange}
                   isLoadingCategories={isLoadingCategories}
+                  selectedModel={selectedModel}
                 />
                 
-                {/* CONTROLES DE PAGINACIÓN */}
                 {meta.total_pages > 1 && (
                   <div className="pagination-controls" style={{ 
                     display: 'flex', 

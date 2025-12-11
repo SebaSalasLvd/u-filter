@@ -1,5 +1,4 @@
 import type { Forum } from "@/types/forum";
-import type { Post } from "@/types/post";
 import type { PaginatedResponse } from "@/types/post"; 
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://grupo2.jb.dcc.uchile.cl/proyecto/u-filter/api";
@@ -20,24 +19,28 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   searchForum: (url: string) => {
-    // 1. Validation Logic
-    // If the URL does NOT have "u-cursos.cl" OR it does NOT have "foro"
-    const cleanUrl = url.split('?')[0];
-    if (!cleanUrl.includes("u-cursos.cl") || !cleanUrl.includes("foro")) {
-      // We return a fake resolved promise so the calling code handles it gracefully.
-      // Adjust 'exists' to true or false depending on how you want the UI to react.
-      // If exists=true, the UI probably won't let you add it (which seems to be your goal).
-      return Promise.resolve({ 
-        exists: true, 
-        forum: null as unknown as Forum // Mocking the forum or passing null
+    try {
+      const urlObj = new URL(url);
+      const cleanUrl = `${urlObj.origin}${urlObj.pathname}`;
+      
+      if (!urlObj.hostname.endsWith("u-cursos.cl")) {
+        return Promise.resolve({
+          exists: false,
+          forum: null,
+        });
+      }
+      return request<{ exists: boolean; forum: Forum }>(
+        `/links/search?url=${encodeURIComponent(cleanUrl)}`
+      );
+    } catch (error) {
+      console.error("Invalid URL provided to searchForum:", error);
+      return Promise.resolve({
+        exists: false,
+        forum: null,
       });
     }
-
-    // 2. Original Request Logic
-    return request<{ exists: boolean; forum: Forum }>(`/links/search?url=${encodeURIComponent(cleanUrl)}`);
   },
-  
-  // MODIFICADO: Acepta page, domain y categories
+
   getPosts: (page: number = 1, domain?: string, categories?: string[]) => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
@@ -52,8 +55,7 @@ export const api = {
     
     return request<PaginatedResponse>(`/scraper/list?${params.toString()}`);
   },
-  
-  // NUEVO: Obtener categorías disponibles
+
   getCategories: () => 
     request<{ categories: string[] }>('/scraper/categories'),
   
@@ -64,11 +66,11 @@ export const api = {
       body: JSON.stringify({ url, name: "Foro U-Cursos" }),
     }),
 
-  runScraper: (domain: string) => 
+  runScraper: (domain: string, model: "gpt" | "bert" = "bert") =>
     request<{ message: string; processed: number }>("/scraper/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain }),
+      body: JSON.stringify({ domain, model }),
     }),
 
   runScraperAll: () =>
