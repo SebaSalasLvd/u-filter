@@ -6,7 +6,8 @@ export type Post = {
   labelColor?: string;
   text?: string;
   date?: string;
-  link?: string;
+  url?: string;
+  model?: string;
 };
 
 
