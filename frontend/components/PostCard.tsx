@@ -9,11 +9,12 @@ const formatDate = (dateStr?: string) => {
 
 export const PostCard: React.FC<{ post: Post }> = ({ post }) => {
   const [open, setOpen] = useState(false);
+  console.log("Rendering PostCard for post:", post);
 
   return (
     <article className="post">
       <div className="post-header">
-        <a href={post?.link} target="_blank" rel="noopener noreferrer">
+        <a href={post?.url} target="_blank" rel="noopener noreferrer">
           <div className="post-left">
             {(() => {
               const rawTitle = post.title ?? "";
