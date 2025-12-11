@@ -110,6 +110,7 @@ class ScraperService:
             seguir = True
 
             while seguir:
+                logger.info(f"Modelo {model}")
                 url_paginada = f"{forum_url_base}?id_tema=&offset={numero_pagina}"
                 logger.info(f"Scrapeando página {numero_pagina}: {url_paginada}")
                 
@@ -134,24 +135,26 @@ class ScraperService:
                         link_tag = contenido.find('a', class_='permalink')
                         url = link_tag['href'] if link_tag and link_tag.has_attr('href') else None
 
-                        if not url: continue
+                        if not url:
+                            continue
                         
-                        existing_post = Post.query.filter_by(post_url=url).first()
+                        existing_post = Post.query.filter_by(post_url=url, model_used=model).first()
                         if existing_post:
-                            logger.info(f"Post ya existe: {url}. Saltando.")
+                            logger.info(f"Post ya existe con el mismo modelo: {url}. Saltando.")
                             continue
 
                         txt_tag = contenido.find('span', class_='ta')
                         texto = txt_tag.get_text(separator="\n", strip=True) if txt_tag else ""
-                        
-                        if not texto or texto == "Sin mensaje": continue
+
+                        if not texto or texto == "Sin mensaje":
+                            continue
 
                         autor_tag = contenido.find('a', class_='usuario')
                         autor = autor_tag.text.strip() if autor_tag else "Desconocido"
 
                         fecha_tag = contenido.find('span', class_='tiempo_rel')
                         fecha_raw = fecha_tag.text.strip() if fecha_tag else ""
-                        
+
                         fecha_match = re.search(r'\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2}:\d{2})?', fecha_raw)
                         fecha_texto = fecha_match.group(0) if fecha_match else fecha_raw
 
@@ -164,7 +167,7 @@ class ScraperService:
                             logger.error(f"Error IA: {e}")
                             classification = {"label": "Error", "score": 0.0, "model": model}
 
-                        try:                 
+                        try:
                             new_post = Post(
                                 title=titulo,
                                 content=texto,
@@ -179,8 +182,8 @@ class ScraperService:
                             db.session.add(new_post)
                             db.session.commit()
                             processed_count += 1
-                            logger.info(f"Guardado: {titulo[:30]}... ({classification['label']})")
-                        
+                            # logger.info(f"Guardado: {titulo[:30]}... ({classification['label']})")
+
                         except Exception as e:
                             db.session.rollback()
                             logger.error(f"Error guardando en BD: {e}")
@@ -197,11 +200,15 @@ class ScraperService:
         return {"message": "Scraping completado", "processed": processed_count}
     
     @staticmethod
-    def run_all_scrapers():
+    def run_all_scrapers(model="bert"):
         """
         Ejecuta el scraper para todos los links registrados en la BD.
         Retorna un resumen de la ejecución.
+
+        Args:
+            model (str): El modelo a usar para la clasificación ("bert" o "gpt"). Default: "bert".
         """
+        logger.info(f"Modelo recibido en scraper_service.py: {model}")
         links = Link.query.all()
         if not links:
             return {"message": "No hay links registrados.", "results": []}
@@ -212,7 +219,7 @@ class ScraperService:
 
         for link in links:
             try:
-                scrape_result = ScraperService.run_scraper(link.url)
+                scrape_result = ScraperService.run_scraper(link.url, model)
                 results.append({"url": link.url, "status": "success", "details": scrape_result})
             except Exception as e:
                 logger.error(f"Error auto-scraping {link.url}: {e}")
