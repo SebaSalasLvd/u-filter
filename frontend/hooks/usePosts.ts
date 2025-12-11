@@ -124,7 +124,7 @@ export function usePosts() {
     }
   };
 
-  const scrapeForum = async (model: "gpt" | "bert" = "bert") => {
+  const scrapeForum = async (model: "gpt" | "bert") => {
     if (!currentUrl) return;
     setStatus("scraping");
     try {
@@ -156,7 +156,7 @@ export function usePosts() {
     }
   };
 
-  const triggerUpdateAll = async (model: "gpt" | "bert" = "bert") => {
+  const triggerUpdateAll = async (model: "gpt" | "bert") => {
     console.log("Modelo recibido en usePosts.ts (triggerUpdateAll):", model);
     setIsGlobalLoading(true);
     try {

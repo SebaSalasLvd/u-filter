@@ -41,7 +41,6 @@ export function PostsList({
         ? selectedCategories.includes(post.label ?? "Otro")
         : true;
       const matchModel = post.model === selectedModel;
-      console.log(selectedModel)
       return matchYear && matchCategories && matchModel;
     });
   }, [posts, selectedYear, selectedCategories, selectedModel]);

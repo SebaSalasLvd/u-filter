@@ -8,7 +8,7 @@ export default defineBackground(() => {
 type CheckPostsMsg = { action: "checkAndFetchPosts"; url: string; categories?: string[] };
 type AddForumMsg = { action: "addForum"; url: string };
 type ScrapeForumMsg = { action: "scrapeForum"; url: string };
-type ScrapeAllMsg = { action: "scrapeAll" };
+type ScrapeAllMsg = { action: "scrapeAll"; model: "gpt" | "bert" };
 type FetchPageMsg = { action: "fetchPage"; page: number; categories?: string[] };
 type GetCategoriesMsg = { action: "getCategories" };
 type ExtensionMessage = CheckPostsMsg | AddForumMsg | ScrapeForumMsg | ScrapeAllMsg | FetchPageMsg | GetCategoriesMsg;
@@ -23,7 +23,7 @@ const handleMessage = async (message: ExtensionMessage) => {
       case "scrapeForum":
         return await handleScrapeForum(message.url);
       case "scrapeAll":
-        return await handleScrapeAll();
+        return await handleScrapeAll(message.model);
       case "fetchPage":
         return await handleFetchPage(message.page, message.categories);
       case "getCategories":
@@ -41,10 +41,8 @@ const handleMessage = async (message: ExtensionMessage) => {
 };
 
 async function handleScrapeAll(model: "gpt" | "bert" = "bert") {
-  console.log("Modelo recibido en background.ts (handleScrapeAll):", model);
   try {
     const result = await api.runScraperAll(model);
-    console.log("Respuesta del backend en background.ts:", result);
     return { status: "scrapingAllCompleted", result };
   } catch (err) {
     console.error("Error en handleScrapeAll:", err);
